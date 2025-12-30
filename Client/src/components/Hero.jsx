@@ -108,6 +108,8 @@ const Hero = () => {
                     className="w-full h-auto object-contain max-h-[500px] xl:max-h-[600px]"
                 />
             </div>
+
+
         </div>
     );
 };
