@@ -158,7 +158,6 @@ const Navbar = () => {
                     <NavLink to="/notices" className="font-medium py-3 border-b border-gray-50 dark:border-gray-800">{t.publicNotices}</NavLink>
                     <div onClick={handleEmployeeCornerClick} className="font-medium py-3 border-b border-gray-50 dark:border-gray-800 flex justify-between cursor-pointer">{t.employeeCorner} <ChevronDown size={16} /></div>
                     <NavLink to="/about-us" className="font-medium py-3 border-b border-gray-50 dark:border-gray-800 hover:pl-2 transition-all">{t.aboutUs}</NavLink>
-
                     <div className="flex flex-col gap-3 mt-4">
                         <SignedIn>
                             <div className="flex justify-start px-2">
