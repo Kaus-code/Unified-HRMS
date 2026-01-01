@@ -1,9 +1,8 @@
 const express = require('express')
 const app = express();
 const PORT = process.env.PORT || 3000;
-const userSync = require("./src/routes/userSync");
 const cors = require('cors');
-
+const verifyRoute = require('./src/routes/employeeVerify');
 const connectDB = require("./src/utils/db");
 connectDB();
 
@@ -11,13 +10,12 @@ const bodyParser = require('body-parser');
 app.use(bodyParser.json());
 
 app.use(cors());
-app.use("/syncUser", userSync);
 
 app.get('/', (req, res) => {
     res.send("Hello World!")
 })
 
-
+app.use("/verify", verifyRoute);
 
 
 app.listen(PORT, () => {

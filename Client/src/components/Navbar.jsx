@@ -32,11 +32,7 @@ const Navbar = () => {
             return;
         }
 
-        const role = user.publicMetadata.role;
-        if (role === 'admin') navigate('/admin');
-        else if (role === 'manager') navigate('/manager');
-        else if (role === 'employee') navigate('/employee');
-        else navigate('/dashboard');
+        navigate('/verify-employee');
     };
 
     return (

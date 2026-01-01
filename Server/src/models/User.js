@@ -1,24 +1,46 @@
 const mongoose = require('mongoose')
 
-const UserSchema = new mongoose.Schema({
-    clerkId:{
-        type: String,
-        required: true,
-        unique: true
-    },
-    email:{
-        type: String,
-        required: true,
-        unique: true
-    },
-    name:{
-        type: String,
-        required: true
-    },
-    role:{
-        type: String,
-        required: true
-    }
-})
+const userSchema = new mongoose.Schema({
 
-module.exports = mongoose.model("User", UserSchema)
+    name: { type: String, required: true },
+    employeeId: { type: String, required: true, unique: true },
+    email: { type: String, required: true, unique: true },
+
+    role: {
+        type: String,
+        enum: ["Commissioner", "Deputy Commissioner", "Sanitary Inspector", "Worker", "Staff"],
+        default: "Staff",
+        required: true
+    },
+
+    department: {
+        type: String,
+        enum: [
+            "Head Office",
+            "Finance",
+            "Health",
+~            "Education",
+            "Water Supply",
+            "Electricity",
+            "Transport",
+            "Road Maintenance",
+            "Market Control",
+            "Solid Waste",
+            "Animal Control",
+            "Security",
+            "Sanitation",
+            "Cleaning"
+        ]
+    },
+
+    Zone: {
+        type: String
+    },
+    Ward: {
+        type: Number
+    }
+
+});
+
+module.exports = mongoose.model('User', userSchema);
+
