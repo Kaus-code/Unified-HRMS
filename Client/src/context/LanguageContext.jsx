@@ -14,7 +14,7 @@ const translations = {
         searchPlaceholder: "Search...",
         login: "Login",
         signup: "Sign Up",
-        switchLang: "English", // Label to switch TO
+        switchLang: "हिन्दी", // Label to switch TO
 
         // Hero
         latestCirculars: "Latest Circulars & Notifications",
@@ -136,7 +136,7 @@ const translations = {
         searchPlaceholder: "खोजें...",
         login: "लॉगिन",
         signup: "साइन अप",
-        switchLang: "हिन्दी",
+        switchLang: "English",
 
         // Hero
         latestCirculars: "नवीनतम परिपत्र और सूचनाएं",
