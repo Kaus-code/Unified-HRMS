@@ -24,15 +24,12 @@ const EmployeeVerification = () => {
             body: JSON.stringify({ employeeId, email }),
         });
         const data = await response.json();
-        console.log(data);
         if (data.success) {
             const role = data.user.role;
             if (role === 'Commissioner') navigate('/admin');
             else if (role === 'Deputy Commissioner') navigate('/manager');
             else if (role === 'Sanitary Inspector') navigate('/sanitary-inspector');
-            else if (role === 'Employee') navigate('/employee');
-            else navigate('/dashboard');
-           
+            else navigate('/employee');
         } else {
             navigate('/');
             alert(data.message);

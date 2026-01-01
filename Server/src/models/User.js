@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema({
             "Head Office",
             "Finance",
             "Health",
-~            "Education",
+            "Education",
             "Water Supply",
             "Electricity",
             "Transport",
