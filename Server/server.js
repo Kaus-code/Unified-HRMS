@@ -16,6 +16,7 @@ app.get('/', (req, res) => {
 })
 
 app.use("/verify", verifyRoute);
+app.use("/employee-issue", require('./src/routes/employeeIssue'));
 
 
 app.listen(PORT, () => {

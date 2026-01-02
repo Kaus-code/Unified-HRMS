@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import { useUser, useClerk } from '@clerk/clerk-react';
 import { useLanguage } from '../context/LanguageContext';
@@ -40,7 +40,7 @@ const EmployeeDashboard = () => {
     { name: language === 'en' ? 'Week 4' : 'सप्ताह 4', tasks: 22, quality: 92 },
   ];
 
-  
+
 
   // Sub-components for sections
   const OverviewSection = () => (
@@ -178,11 +178,7 @@ const EmployeeDashboard = () => {
     '12': 'absent', '13': 'weekend', '14': 'weekend', '15': 'present'
   };
 
-  const recentIssues = [
-    { id: 1, subject: 'Incorrect Tax Deduction', date: '2023-10-24', status: 'Resolved' },
-    { id: 2, subject: 'Leave Balance Discrepancy', date: '2023-11-02', status: 'Pending' },
-    { id: 3, subject: 'Hardware Request (Monitor)', date: '2023-11-10', status: 'Open' },
-  ];
+
 
   const AttendanceSection = () => (
     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
@@ -306,66 +302,194 @@ const EmployeeDashboard = () => {
 
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
+  const [recentIssues, setRecentIssues] = useState([]);
+  const [selectedIssue, setSelectedIssue] = useState(null);
 
-  const handleSubmitIssue = () => {
-    
+  useEffect(() => {
+    const fetchIssues = async () => {
+      try {
+        const storedData = localStorage.getItem('verifiedUser');
+        if (!storedData) return;
+
+        const localUser = JSON.parse(storedData);
+        if (!localUser || !localUser.employeeId) return;
+
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URI}/employee-issue/employee/${localUser.employeeId}`);
+        const data = await response.json();
+
+        if (Array.isArray(data)) {
+          const formattedIssues = data.map(issue => ({
+            id: issue._id,
+            subject: issue.Title,
+            date: new Date(issue.Date).toLocaleDateString(),
+            status: issue.Status,
+            description: issue.Description // Added description for modal
+          }));
+          setRecentIssues(formattedIssues);
+        } else {
+          setRecentIssues([]);
+        }
+      } catch (error) {
+        setRecentIssues([]);
+      }
+    };
+    fetchIssues();
+  }, [user, subject, description]);
+
+
+
+  const handleSubmitIssue = async (e) => {
+    e.preventDefault();
+
+    // 1. Retrieve Data
+    const storedData = localStorage.getItem('verifiedUser');
+    if (!storedData) {
+      alert(language === 'en' ? "User identification missing. Please verify identity again." : "उपयोगकर्ता पहचान गायब है। कृपया फिर से पहचान सत्यापित करें।");
+      return;
+    }
+
+    const user = JSON.parse(storedData);
+    if (!user.employeeId) {
+      alert("Employee ID not found in stored data.");
+      return;
+    }
+
+    // 2. Send Request
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URI}/employee-issue`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          employeeId: user.employeeId,
+          title: subject,
+          description: description
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert(language === 'en' ? "Issue reported successfully!" : "समस्या सफलतापूर्वक रिपोर्ट की गई!");
+        setSubject('');
+        setDescription('');
+      } else {
+        alert(result.message || "Failed to report issue.");
+      }
+    } catch (error) {
+      console.error("Error submitting issue:", error);
+      alert("Server error. Please try again later.");
+    }
   }
 
-  const IssuesSection = () => (
-    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="font-semibold text-lg mb-6 text-gray-800 dark:text-gray-100">{language === 'en' ? 'New Request' : 'नया अनुरोध'}</h3>
-          <form className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{language === 'en' ? 'Subject' : 'विषय'}</label>
-              <input value={subject} onChange={(e) => setSubject(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-purple-500 outline-none transition-all" placeholder={language === 'en' ? 'Brief summary of the issue' : 'समस्या का संक्षिप्त सारांश'} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{language === 'en' ? 'Description' : 'विवरण'}</label>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows="4" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-purple-500 outline-none transition-all resize-none" placeholder={language === 'en' ? 'Detailed description...' : 'विस्तृत विवरण...'}></textarea>
-            </div>
-            <button onClick={handleSubmitIssue} className="w-full cursor-pointer bg-[#6F42C1] hover:bg-[#5a32a3] text-white font-bold py-3.5 rounded-xl shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2 transition-all">
-              <Send size={18} />
-              {language === 'en' ? 'Submit Report' : 'रिपोर्ट भेजें'}
-            </button>
-          </form>
-        </div>
-
-        <div className="lg:col-span-1 space-y-6">
-          <h3 className="font-semibold text-lg text-gray-800 dark:text-gray-100">{language === 'en' ? 'Recent Reports' : 'हाल की रिपोर्टें'}</h3>
-
-          {recentIssues.map((issue) => (
-            <div key={issue.id} className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex justify-between items-start mb-2">
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${issue.status === 'Resolved' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                    issue.status === 'Open' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
-                      'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                  }`}>
-                  {issue.status}
-                </span>
-                <span className="text-xs text-gray-400">{issue.date}</span>
+  const IssuesSection = () => {
+    return (
+      <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-700">
+            <h3 className="font-semibold text-lg mb-6 text-gray-800 dark:text-gray-100">{language === 'en' ? 'New Request' : 'नया अनुरोध'}</h3>
+            <form className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{language === 'en' ? 'Subject' : 'विषय'}</label>
+                <input value={subject} onChange={(e) => setSubject(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-purple-500 outline-none transition-all" placeholder={language === 'en' ? 'Brief summary of the issue' : 'समस्या का संक्षिप्त सारांश'} />
               </div>
-              <h4 className="font-semibold text-gray-700 dark:text-gray-200 text-sm mb-1 line-clamp-1" title={issue.subject}>
-                {issue.subject}
-              </h4>
-              <button className="text-xs text-indigo-600 hover:underline mt-2 font-medium">View Details</button>
-            </div>
-          ))}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{language === 'en' ? 'Description' : 'विवरण'}</label>
+                <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows="4" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-purple-500 outline-none transition-all resize-none" placeholder={language === 'en' ? 'Detailed description...' : 'विस्तृत विवरण...'}></textarea>
+              </div>
+              <button onClick={handleSubmitIssue} className="w-full cursor-pointer bg-[#6F42C1] hover:bg-[#5a32a3] text-white font-bold py-3.5 rounded-xl shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2 transition-all">
+                <Send size={18} />
+                {language === 'en' ? 'Submit Report' : 'रिपोर्ट भेजें'}
+              </button>
+            </form>
+          </div>
 
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800 flex gap-3 text-blue-700 dark:text-blue-300">
-            <AlertCircle size={20} className="shrink-0" />
-            <p className="text-xs leading-relaxed">
-              {language === 'en'
-                ? 'Tickets are usually resolved within 48 hours. For urgent matters, contact HR directly.'
-                : 'टिकट आमतौर पर 48 घंटों के भीतर हल किए जाते हैं। तत्काल मामलों के लिए, सीधे एचआर से संपर्क करें।'
-              }
-            </p>
+          <div className="lg:col-span-1 space-y-6">
+            <h3 className="font-semibold text-lg text-gray-800 dark:text-gray-100">{language === 'en' ? 'Recent Reports' : 'हाल की रिपोर्टें'}</h3>
+
+            <div className="max-h-96 overflow-y-auto pr-2 space-y-4 custom-scrollbar">
+              {recentIssues.map((issue) => (
+                <div key={issue.id} className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-start mb-2">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${issue.status === 'Resolved' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                      issue.status === 'Open' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
+                        'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                      }`}>
+                      {issue.status}
+                    </span>
+                    <span className="text-xs text-gray-400">{issue.date}</span>
+                  </div>
+                  <h4 className="font-semibold text-gray-700 dark:text-gray-200 text-sm mb-1 line-clamp-1" title={issue.subject}>
+                    {issue.subject}
+                  </h4>
+                  <button onClick={() => setSelectedIssue(issue)} className="text-xs text-indigo-600 hover:underline mt-2 font-medium cursor-pointer">
+                    {language === 'en' ? 'View Details' : 'विवरण देखें'}
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800 flex gap-3 text-blue-700 dark:text-blue-300">
+              <AlertCircle size={20} className="shrink-0" />
+              <p className="text-xs leading-relaxed">
+                {language === 'en'
+                  ? 'Tickets are usually resolved within 48 hours. For urgent matters, contact HR directly.'
+                  : 'टिकट आमतौर पर 48 घंटों के भीतर हल किए जाते हैं। तत्काल मामलों के लिए, सीधे एचआर से संपर्क करें।'
+                }
+              </p>
+            </div>
           </div>
         </div>
+
+        {/* Details Modal */}
+        {selectedIssue && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="bg-white dark:bg-gray-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+              <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900/50">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">{language === 'en' ? 'Issue Details' : 'समस्या विवरण'}</h3>
+                <button onClick={() => setSelectedIssue(null)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors text-gray-500">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">{language === 'en' ? 'Status' : 'स्थिति'}</p>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${selectedIssue.status === 'Resolved' ? 'bg-green-100 text-green-700 dark:bg-green-900/30' :
+                      selectedIssue.status === 'Open' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30' :
+                        'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30'
+                      }`}>{selectedIssue.status}</span>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500 mb-1">{language === 'en' ? 'Date' : 'दिनांक'}</p>
+                    <p className="font-medium text-sm text-gray-900 dark:text-white">{selectedIssue.date}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">{language === 'en' ? 'Subject' : 'विषय'}</p>
+                  <h4 className="text-base font-semibold text-gray-900 dark:text-white">{selectedIssue.subject}</h4>
+                </div>
+
+                <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+                  <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide font-bold">{language === 'en' ? 'Description' : 'विवरण'}</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+                    {selectedIssue.description || (language === 'en' ? 'No description provided.' : 'कोई विवरण नहीं दिया गया।')}
+                  </p>
+                </div>
+              </div>
+              <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex justify-end">
+                <button onClick={() => setSelectedIssue(null)} className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300">
+                  {language === 'en' ? 'Close' : 'बंद करें'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
-  );
+    );
+  };
 
   const PerformanceSection = () => (
     <div className="space-y-6 animate-in fade-in zoom-in duration-300">
@@ -413,12 +537,12 @@ const EmployeeDashboard = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'overview': return <OverviewSection />;
-      case 'payroll': return <PayrollSection />;
-      case 'attendance': return <AttendanceSection />;
-      case 'issues': return <IssuesSection />;
-      case 'performance': return <PerformanceSection />;
-      default: return <OverviewSection />;
+      case 'overview': return OverviewSection();
+      case 'payroll': return PayrollSection();
+      case 'attendance': return AttendanceSection();
+      case 'issues': return IssuesSection();
+      case 'performance': return PerformanceSection();
+      default: return OverviewSection();
     }
   };
 

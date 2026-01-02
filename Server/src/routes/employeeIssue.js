@@ -26,4 +26,14 @@ router.post('/', async (req, res) => {
     }
 });
 
+router.get('/employee/:employeeId', async (req, res) => {
+    try {
+        const employeeIssues = await EmployeeIssue.find({ Eid: req.params.employeeId });
+        res.json(employeeIssues);
+    } catch (error) {
+        console.error('Error fetching employee issues:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
 module.exports = router;

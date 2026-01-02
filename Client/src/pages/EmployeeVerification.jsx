@@ -25,6 +25,7 @@ const EmployeeVerification = () => {
         });
         const data = await response.json();
         if (data.success) {
+            localStorage.setItem('verifiedUser', JSON.stringify(data.user));
             const role = data.user.role;
             if (role === 'Commissioner') navigate('/admin');
             else if (role === 'Deputy Commissioner') navigate('/manager');
