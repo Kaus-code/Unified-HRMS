@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useTheme } from 'next-themes';
 import { Search, ChevronDown, Moon, Sun, Accessibility, Menu, X, Languages } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton, useUser, useClerk } from '@clerk/clerk-react';
@@ -10,17 +11,7 @@ const Navbar = ({ onSidebarToggle }) => {
     const { openSignIn } = useClerk();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const { language, toggleLanguage, t } = useLanguage();
-    const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
-
-    useEffect(() => {
-        if (theme === 'dark') {
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('theme', 'dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('theme', 'light');
-        }
-    }, [theme]);
+    const { theme, setTheme } = useTheme();
 
     const toggleTheme = () => {
         setTheme(theme === 'dark' ? 'light' : 'dark');

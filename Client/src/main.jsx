@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.jsx'
 import { LanguageProvider } from './context/LanguageContext'
 import { ClerkProvider } from '@clerk/clerk-react'
+import { ThemeProvider } from './components/theme-provider'
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 
@@ -15,9 +16,11 @@ if (!PUBLISHABLE_KEY) {
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
-      <LanguageProvider>
-        <App />
-      </LanguageProvider>
+      <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme" attribute="class" enableSystem disableTransitionOnChange>
+        <LanguageProvider>
+          <App />
+        </LanguageProvider>
+      </ThemeProvider>
     </ClerkProvider>
   </StrictMode>,
 )
