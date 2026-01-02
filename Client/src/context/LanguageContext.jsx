@@ -258,10 +258,12 @@ export const LanguageProvider = ({ children }) => {
         setLanguage((prev) => (prev === 'en' ? 'hi' : 'en'));
     };
 
-    const t = translations[language];
+    // Safety check: ensure language is valid
+    const currentLanguage = translations[language] ? language : 'en';
+    const t = translations[currentLanguage];
 
     return (
-        <LanguageContext.Provider value={{ language, toggleLanguage, t }}>
+        <LanguageContext.Provider value={{ language: currentLanguage, toggleLanguage, t }}>
             {children}
         </LanguageContext.Provider>
     );

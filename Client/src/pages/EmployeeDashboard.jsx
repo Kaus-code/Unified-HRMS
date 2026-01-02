@@ -28,14 +28,69 @@ const EmployeeDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
+  // Attendance state moved to top to prevent ReferenceError
+  const [employeeId, setEmployeeId] = useState(null);
+  const [userData, setUserData] = useState(null);
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [locationVerified, setLocationVerified] = useState(false);
+  const [distanceFromWard, setDistanceFromWard] = useState(null);
+  const [locationError, setLocationError] = useState(null);
+  const [isCheckingIn, setIsCheckingIn] = useState(false);
+  const [attendanceStatus, setAttendanceStatus] = useState({});
+  const [todayAttendance, setTodayAttendance] = useState(null);
+  const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [isWithinCheckInTime, setIsWithinCheckInTime] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   // Placeholder Data
-  const payrollData = [
-    { month: 'Oct', amount: 45000, status: language === 'en' ? 'Paid' : 'भुगतान किया' },
-    { month: 'Nov', amount: 45000, status: language === 'en' ? 'Paid' : 'भुगतान किया' },
-    { month: 'Dec', amount: 48000, status: language === 'en' ? 'Processing' : 'प्रक्रिया में' },
-  ];
+  // Payroll Data State
+  const [payrollData, setPayrollData] = useState([]);
+  const [salaryStructure, setSalaryStructure] = useState(null);
+
+  useEffect(() => {
+    const fetchStructure = async () => {
+      if (!employeeId) return;
+      try {
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URI}/payroll/structure/${employeeId}`);
+        const data = await response.json();
+        if (data.success) {
+          setSalaryStructure(data.structure);
+        }
+      } catch (error) {
+        console.error("Error fetching salary structure:", error);
+      }
+    };
+    fetchStructure();
+  }, [employeeId]);
+
+
+  useEffect(() => {
+    const fetchPayroll = async () => {
+      if (!employeeId) return;
+      try {
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URI}/payroll/employee/${employeeId}`);
+        const data = await response.json();
+        if (data.success && Array.isArray(data.payrolls)) {
+          // Map backend data to frontend structure
+          const formattedData = data.payrolls.map(item => ({
+            month: item.month, // "October 2026"
+            amount: item.netAmount,
+            status: item.status,
+            ...item
+          }));
+          setPayrollData(formattedData);
+        }
+      } catch (error) {
+        console.error("Error fetching payroll:", error);
+      }
+    };
+    fetchPayroll();
+  }, [employeeId]);
+
 
   // Performance/Attendance Analytics State
   const [performanceData, setPerformanceData] = useState([
@@ -152,7 +207,9 @@ const EmployeeDashboard = () => {
             </div>
           </div>
           <div className="mt-4 text-sm text-pink-100">
-            {language === 'en' ? 'Estimated: ₹48,000' : 'अनुमानित: ₹48,000'}
+            {language === 'en'
+              ? `Estimated: ₹${salaryStructure ? salaryStructure.projectedNet.toLocaleString() : '...'}`
+              : `अनुमानित: ₹${salaryStructure ? salaryStructure.projectedNet.toLocaleString() : '...'}`}
           </div>
         </div>
 
@@ -167,7 +224,7 @@ const EmployeeDashboard = () => {
             </div>
           </div>
           <div className="mt-4 text-sm text-emerald-100">
-            {issueCount===0 ? (language === 'en' ? 'All clear!' : 'सब ठीक है!') : (language === 'en' ? 'There are open issues' : 'खुली समस्याएं हैं')}
+            {issueCount === 0 ? (language === 'en' ? 'All clear!' : 'सब ठीक है!') : (language === 'en' ? 'There are open issues' : 'खुली समस्याएं हैं')}
           </div>
         </div>
       </div>
@@ -240,20 +297,7 @@ const EmployeeDashboard = () => {
   );
 
   // Attendance state
-  const [employeeId, setEmployeeId] = useState(null);
-  const [userData, setUserData] = useState(null);
-  const [currentLocation, setCurrentLocation] = useState(null);
-  const [locationVerified, setLocationVerified] = useState(false);
-  const [distanceFromWard, setDistanceFromWard] = useState(null);
-  const [locationError, setLocationError] = useState(null);
-  const [isCheckingIn, setIsCheckingIn] = useState(false);
-  const [attendanceStatus, setAttendanceStatus] = useState({});
-  const [todayAttendance, setTodayAttendance] = useState(null);
-  const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
-  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [isWithinCheckInTime, setIsWithinCheckInTime] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
+
 
   // Check if current time is within check-in window (9 AM to 11 AM)
   const checkTimeWindow = () => {
@@ -1025,8 +1069,8 @@ const EmployeeDashboard = () => {
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
           <h3 className="font-semibold mb-2">{language === 'en' ? 'Task Completion (Based on Attendance)' : 'कार्य पूर्णता (उपस्थिति के आधार पर)'}</h3>
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-6">
-            {language === 'en' 
-              ? 'Tasks completed based on attendance days per week' 
+            {language === 'en'
+              ? 'Tasks completed based on attendance days per week'
               : 'साप्ताहिक उपस्थिति के आधार पर पूर्ण किए गए कार्य'}
           </p>
           <div className="h-64">
@@ -1039,15 +1083,15 @@ const EmployeeDashboard = () => {
                 <BarChart data={performanceData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
                     domain={[0, 'dataMax']}
                     ticks={[0, 1, 3, 5, 7]}
                     allowDecimals={false}
                   />
-                  <Tooltip 
-                    cursor={{ fill: 'transparent' }} 
+                  <Tooltip
+                    cursor={{ fill: 'transparent' }}
                     contentStyle={{ borderRadius: '8px' }}
                     formatter={(value) => [value, language === 'en' ? 'Tasks' : 'कार्य']}
                   />
@@ -1061,8 +1105,8 @@ const EmployeeDashboard = () => {
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
           <h3 className="font-semibold mb-2">{language === 'en' ? 'Attendance Percentage Trend' : 'उपस्थिति प्रतिशत रुझान'}</h3>
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-6">
-            {language === 'en' 
-              ? 'Weekly attendance percentage over time' 
+            {language === 'en'
+              ? 'Weekly attendance percentage over time'
               : 'समय के साथ साप्ताहिक उपस्थिति प्रतिशत'}
           </p>
           <div className="h-64">
@@ -1082,7 +1126,7 @@ const EmployeeDashboard = () => {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} />
                   <YAxis axisLine={false} tickLine={false} domain={[0, 100]} />
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{ borderRadius: '8px' }}
                     formatter={(value) => [`${value}%`, language === 'en' ? 'Attendance' : 'उपस्थिति']}
                   />
@@ -1115,7 +1159,7 @@ const EmployeeDashboard = () => {
             <p className="text-sm opacity-90 mb-1">{language === 'en' ? 'Best Week' : 'सर्वश्रेष्ठ सप्ताह'}</p>
             <p className="text-2xl font-bold">
               {performanceData.length > 0
-                ? language === 'en' 
+                ? language === 'en'
                   ? `Week ${performanceData.reduce((max, week, idx) => week.quality > performanceData[max].quality ? idx : max, 0) + 1}`
                   : `सप्ताह ${performanceData.reduce((max, week, idx) => week.quality > performanceData[max].quality ? idx : max, 0) + 1}`
                 : '-'}
