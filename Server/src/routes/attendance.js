@@ -429,5 +429,67 @@ router.get('/employee/:employeeId', async (req, res) => {
     }
 });
 
+/**
+ * GET /attendance/analytics/:employeeId
+ * Get weekly attendance analytics for performance chart
+ */
+router.get('/analytics/:employeeId', async (req, res) => {
+    try {
+        const { employeeId } = req.params;
+        const weeks = parseInt(req.query.weeks) || 4;
+
+        const now = new Date();
+        const analytics = [];
+
+        // Calculate for each week going backwards
+        for (let i = weeks - 1; i >= 0; i--) {
+            const weekEnd = new Date(now);
+            weekEnd.setDate(now.getDate() - (i * 7));
+            weekEnd.setHours(23, 59, 59, 999);
+
+            const weekStart = new Date(weekEnd);
+            weekStart.setDate(weekEnd.getDate() - 6);
+            weekStart.setHours(0, 0, 0, 0);
+
+            // Find attendance records for this week
+            const records = await Attendance.find({
+                employeeId,
+                date: {
+                    $gte: weekStart,
+                    $lte: weekEnd
+                }
+            });
+
+            const presentDays = records.filter(r => r.status === 'present' || r.checkInTime).length;
+            const totalDays = 7;
+            const attendancePercentage = ((presentDays / totalDays) * 100).toFixed(1);
+
+            analytics.push({
+                weekNumber: weeks - i,
+                weekStart: weekStart.toISOString().split('T')[0],
+                weekEnd: weekEnd.toISOString().split('T')[0],
+                presentDays,
+                totalDays,
+                attendancePercentage: parseFloat(attendancePercentage),
+                tasksCompleted: presentDays, // Using present days as tasks for now
+                quality: parseFloat(attendancePercentage)
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            employeeId,
+            analytics
+        });
+    } catch (error) {
+        console.error('Error fetching attendance analytics:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;
 
