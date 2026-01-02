@@ -67,12 +67,15 @@ function getWardCoordinates(wardNumber, zone) {
  */
 async function verifyLocationInWard(currentLat, currentLon, assignedWard, assignedZone, allowedRadius = 1500) {
     if (!assignedWard) {
+        console.log('Verification Failed: No assigned ward provided.');
         return {
             isValid: false,
             distance: null,
             message: 'Employee has no assigned ward'
         };
     }
+
+    console.log(`[VERIFY] Checking Point [${currentLon}, ${currentLat}] against Ward ${assignedWard}`);
 
     try {
         // 1. Precise Geofencing Check (Polygon)

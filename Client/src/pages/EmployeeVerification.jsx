@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { ShieldCheck, ArrowRight } from 'lucide-react';
+import { ShieldCheck, ArrowRight, Loader2 } from 'lucide-react';
 import { useUser } from '@clerk/clerk-react';
 
 const EmployeeVerification = () => {
     const [employeeId, setEmployeeId] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
     const navigate = useNavigate();
     const { user } = useUser();
 
@@ -13,29 +15,43 @@ const EmployeeVerification = () => {
         e.preventDefault();
         if (!employeeId.trim()) return;
 
-        // Get user's email from Clerk user object
-        const email = user?.primaryEmailAddress?.emailAddress;
+        setIsLoading(true);
+        setError('');
 
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URI}/verify`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ employeeId, email }),
-        });
-        const data = await response.json();
-        if (data.success) {
-            localStorage.setItem('verifiedUser', JSON.stringify(data.user));
-            const role = data.user.role;
-            if (role === 'Commissioner') navigate('/admin');
-            else if (role === 'Deputy Commissioner') navigate('/manager');
-            else if (role === 'Sanitary Inspector') navigate('/sanitary-inspector');
-            else navigate('/employee');
-        } else {
-            navigate('/');
-            alert(data.message);
+        try {
+            // Get user's email from Clerk user object
+            const email = user?.primaryEmailAddress?.emailAddress;
+
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URI}/verify`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ employeeId, email }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+
+            const data = await response.json();
+
+            if (data.success) {
+                localStorage.setItem('verifiedUser', JSON.stringify(data.user));
+                const role = data.user.role;
+                if (role === 'Commissioner') navigate('/admin');
+                else if (role === 'Deputy Commissioner') navigate('/manager');
+                else if (role === 'Sanitary Inspector') navigate('/sanitary-inspector');
+                else navigate('/employee');
+            } else {
+                setError(data.message || 'Verification failed. Please check your Employee ID.');
+                setIsLoading(false);
+            }
+        } catch (err) {
+            console.error('Verification error:', err);
+            setError('Failed to verify. Please check your connection and try again.');
+            setIsLoading(false);
         }
-
     };
 
 
@@ -64,18 +80,39 @@ const EmployeeVerification = () => {
                                     type="text"
                                     id="empId"
                                     value={employeeId}
-                                    onChange={(e) => setEmployeeId(e.target.value)}
+                                    onChange={(e) => {
+                                        setEmployeeId(e.target.value);
+                                        setError('');
+                                    }}
                                     placeholder="e.g. MCD-2024-8899"
                                     className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-[#6F42C1] focus:border-transparent outline-none transition-all placeholder-gray-400"
                                     required
+                                    disabled={isLoading}
                                 />
                             </div>
+
+                            {error && (
+                                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
+                                    {error}
+                                </div>
+                            )}
+
                             <button
                                 type="submit"
-                                className="w-full bg-[#6F42C1] hover:bg-[#5a32a3] text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-transform active:scale-[0.98] shadow-lg shadow-purple-500/20"
+                                disabled={isLoading}
+                                className="w-full bg-[#6F42C1] hover:bg-[#5a32a3] disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-transform active:scale-[0.98] shadow-lg shadow-purple-500/20 disabled:shadow-none"
                             >
-                                <span>Verify Identity</span>
-                                <ArrowRight size={18} />
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 size={18} className="animate-spin" />
+                                        <span>Verifying...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span>Verify Identity</span>
+                                        <ArrowRight size={18} />
+                                    </>
+                                )}
                             </button>
                         </form>
                         <div className="mt-6 text-center">
