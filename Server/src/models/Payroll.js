@@ -15,6 +15,12 @@ const payrollSchema = new mongoose.Schema({
         type: String,
         enum: ["Paid", "Pending"],
         default: "Pending"
+    },
+    allowances: {
+        da: { type: Number, default: 0 },
+        hra: { type: Number, default: 0 },
+        ta: { type: Number, default: 0 },
+        medical: { type: Number, default: 0 }
     }
 }, { timestamps: true });
 

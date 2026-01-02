@@ -39,33 +39,23 @@ const userSchema = new mongoose.Schema({
     Ward: {
         type: Number
     },
-    joiningDate:{
+    joiningDate: {
         type: Date,
         default: Date.now
     },
-    employmentStatus: { 
-    type: String, 
-    enum: ['Permanent', 'Contractual', 'Retired'], 
-    default: 'Permanent'
+    employmentStatus: {
+        type: String,
+        enum: ['Permanent', 'Contractual', 'Retired'],
+        default: 'Permanent'
+    },
+    baseSalary: {
+        type: Number,
+        default: 45000 // Default base salary
     }
 });
 
-const payrollSchema = new mongoose.Schema({
-    userId: {type: mongoose.Schema.Types.ObjectId, ref: "User", required: true},
-    month: String,
-    baseSalary: Number,
-    daysPresent: Number,
-    overtimeHours: Number,
-    taxDeductions: Number,
-    pfDeductions: Number,
-    netAmount: Number,
-    status:{
-        type: String,
-        enum: ["Paid", "Pending"],
-        default: "Pending"
-    }
-})
 
-const payrollModel = mongoose.model("Payroll", payrollSchema);
+
+
 module.exports = mongoose.model('User', userSchema);
 
