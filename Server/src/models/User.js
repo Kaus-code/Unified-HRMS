@@ -50,5 +50,22 @@ const userSchema = new mongoose.Schema({
     }
 });
 
+const payrollSchema = new mongoose.Schema({
+    userId: {type: mongoose.Schema.Types.ObjectId, ref: "User", required: true},
+    month: String,
+    baseSalary: Number,
+    daysPresent: Number,
+    overtimeHours: Number,
+    taxDeductions: Number,
+    pfDeductions: Number,
+    netAmount: Number,
+    status:{
+        type: String,
+        enum: ["Paid", "Pending"],
+        default: "Pending"
+    }
+})
+
+const payrollModel = mongoose.model("Payroll", payrollSchema);
 module.exports = mongoose.model('User', userSchema);
 

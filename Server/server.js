@@ -19,6 +19,7 @@ app.get('/', (req, res) => {
 app.use("/verify", verifyRoute);
 app.use("/employee-issue", require('./src/routes/employeeIssue'));
 app.use("/attendance", attendanceRoute);
+app.use("/payroll", require('./src/routes/payroll'));
 
 
 

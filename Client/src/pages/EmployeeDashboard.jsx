@@ -44,6 +44,54 @@ const EmployeeDashboard = () => {
     { name: language === 'en' ? 'Week 4' : 'सप्ताह 4', tasks: 22, quality: 92 },
   ];
 
+  const [attendancePerformance, setAttendancePerformance] = useState('0%');
+
+  const fetchAttendancePerformance = async () => {
+    try {
+      const storedData = localStorage.getItem('verifiedUser');
+      if (!storedData) return;
+
+      const userData = JSON.parse(storedData);
+      const employeeId = userData.employeeId;
+
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URI}/attendance/employee/${employeeId}`);
+      const data = await response.json();
+      if (data.success) {
+        setAttendancePerformance(data.attendancePercentage + '%');
+      }
+    } catch (error) {
+      console.error('Error fetching attendance performance:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchAttendancePerformance();
+  }, [setActiveTab]);
+
+  const [issueCount, setIssueCount] = useState(0);
+
+  const fetchIssueCount = async () => {
+    try {
+      const storedData = localStorage.getItem('verifiedUser');
+      if (!storedData) return;
+
+      const userData = JSON.parse(storedData);
+      const employeeId = userData.employeeId;
+
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URI}/employee-issue/count/${employeeId}`);
+      const data = await response.json();
+      if (data.success) {
+        setIssueCount(data.issueCount);
+      }
+    } catch (error) {
+      console.error('Error fetching issue count:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchIssueCount();
+  }, [setActiveTab]);
+
 
 
   // Sub-components for sections
@@ -57,14 +105,11 @@ const EmployeeDashboard = () => {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-purple-100 mb-1">{language === 'en' ? 'Attendance Rate' : 'उपस्थिति दर'}</p>
-              <h3 className="text-3xl font-bold">92%</h3>
+              <h3 className="text-3xl font-bold">{attendancePerformance}</h3>
             </div>
             <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
               <CalendarCheck size={24} />
             </div>
-          </div>
-          <div className="mt-4 text-sm text-purple-100">
-            {language === 'en' ? 'Top 5% in your department' : 'आपके विभाग में शीर्ष 5%'}
           </div>
         </div>
 
@@ -87,14 +132,14 @@ const EmployeeDashboard = () => {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-emerald-100 mb-1">{language === 'en' ? 'Open Issues' : 'खुली समस्याएं'}</p>
-              <h3 className="text-3xl font-bold">0</h3>
+              <h3 className="text-3xl font-bold">{issueCount}</h3>
             </div>
             <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
               <AlertCircle size={24} />
             </div>
           </div>
           <div className="mt-4 text-sm text-emerald-100">
-            {language === 'en' ? 'All clear!' : 'सब ठीक है!'}
+            {issueCount===0 ? (language === 'en' ? 'All clear!' : 'सब ठीक है!') : (language === 'en' ? 'There are open issues' : 'खुली समस्याएं हैं')}
           </div>
         </div>
       </div>

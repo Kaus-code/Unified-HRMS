@@ -366,5 +366,68 @@ router.get('/today/:employeeId', async (req, res) => {
     }
 });
 
+/**
+ * GET /attendance/employee/:employeeId
+ * Get current month attendance percentage based on days elapsed
+ */
+router.get('/employee/:employeeId', async (req, res) => {
+    try {
+        const { employeeId } = req.params;
+
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth();
+        const currentDay = now.getDate();
+
+        // Start of current month
+        const monthStart = new Date(currentYear, currentMonth, 1);
+        monthStart.setHours(0, 0, 0, 0);
+
+        // End of today
+        const today = new Date(currentYear, currentMonth, currentDay);
+        today.setHours(23, 59, 59, 999);
+
+        // Find all attendance records from month start to today
+        const attendanceRecords = await Attendance.find({
+            employeeId,
+            date: {
+                $gte: monthStart,
+                $lte: today
+            }
+        });
+
+        // Count present days (status === 'present' or has checkInTime)
+        const presentDays = attendanceRecords.filter(record =>
+            record.status === 'present' || record.checkInTime
+        ).length;
+
+        // Total days elapsed in current month (from 1st to today)
+        const totalDaysElapsed = currentDay;
+
+        // Calculate percentage
+        const attendancePercentage = totalDaysElapsed > 0
+            ? ((presentDays / totalDaysElapsed) * 100).toFixed(2)
+            : 0;
+
+        return res.status(200).json({
+            success: true,
+            employeeId,
+            currentMonth: monthStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+            totalDaysElapsed,
+            presentDays,
+            absentDays: totalDaysElapsed - presentDays,
+            attendancePercentage: parseFloat(attendancePercentage),
+            records: attendanceRecords
+        });
+    } catch (error) {
+        console.error('Error fetching employee attendance:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;
 
