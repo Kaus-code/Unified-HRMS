@@ -11,7 +11,8 @@ export const zonePerformanceData = [
         complaints_pending: 45,
         sanitation_score: 85,
         revenue_collected: 124.5,
-        trend: "up"
+        trend: "up",
+        coordinates: [77.21, 28.65] // City SP
     },
     {
         zone_id: "zone_2",
@@ -22,7 +23,8 @@ export const zonePerformanceData = [
         complaints_pending: 67,
         sanitation_score: 78,
         revenue_collected: 156.2,
-        trend: "up"
+        trend: "up",
+        coordinates: [77.25, 28.55] // Central
     },
     {
         zone_id: "zone_3",
@@ -33,7 +35,8 @@ export const zonePerformanceData = [
         complaints_pending: 23,
         sanitation_score: 92,
         revenue_collected: 198.7,
-        trend: "up"
+        trend: "up",
+        coordinates: [77.20, 28.53] // South
     },
     {
         zone_id: "zone_4",
@@ -44,7 +47,8 @@ export const zonePerformanceData = [
         complaints_pending: 134,
         sanitation_score: 62,
         revenue_collected: 89.3,
-        trend: "down"
+        trend: "down",
+        coordinates: [77.29, 28.69] // Shahdara North
     },
     {
         zone_id: "zone_5",
@@ -55,7 +59,8 @@ export const zonePerformanceData = [
         complaints_pending: 189,
         sanitation_score: 48,
         revenue_collected: 67.8,
-        trend: "down"
+        trend: "down",
+        coordinates: [77.30, 28.62] // Shahdara South
     },
     {
         zone_id: "zone_6",
@@ -66,7 +71,8 @@ export const zonePerformanceData = [
         complaints_pending: 89,
         sanitation_score: 75,
         revenue_collected: 143.6,
-        trend: "stable"
+        trend: "stable",
+        coordinates: [77.19, 28.64] // Karol Bagh
     },
     {
         zone_id: "zone_7",
@@ -77,7 +83,8 @@ export const zonePerformanceData = [
         complaints_pending: 34,
         sanitation_score: 89,
         revenue_collected: 167.4,
-        trend: "up"
+        trend: "up",
+        coordinates: [77.12, 28.71] // Rohini (adjusted)
     },
     {
         zone_id: "zone_8",
@@ -88,7 +95,8 @@ export const zonePerformanceData = [
         complaints_pending: 212,
         sanitation_score: 45,
         revenue_collected: 54.2,
-        trend: "down"
+        trend: "down",
+        coordinates: [77.09, 28.84] // Narela
     },
     {
         zone_id: "zone_9",
@@ -99,7 +107,8 @@ export const zonePerformanceData = [
         complaints_pending: 56,
         sanitation_score: 81,
         revenue_collected: 112.8,
-        trend: "up"
+        trend: "up",
+        coordinates: [77.22, 28.68] // Civil Lines
     },
     {
         zone_id: "zone_10",
@@ -110,7 +119,8 @@ export const zonePerformanceData = [
         complaints_pending: 167,
         sanitation_score: 54,
         revenue_collected: 78.9,
-        trend: "stable"
+        trend: "stable",
+        coordinates: [76.98, 28.61] // Najafgarh
     },
     {
         zone_id: "zone_11",
@@ -121,7 +131,8 @@ export const zonePerformanceData = [
         complaints_pending: 98,
         sanitation_score: 71,
         revenue_collected: 134.5,
-        trend: "up"
+        trend: "up",
+        coordinates: [77.12, 28.64] // West Zone
     },
     {
         zone_id: "zone_12",
@@ -132,7 +143,8 @@ export const zonePerformanceData = [
         complaints_pending: 112,
         sanitation_score: 66,
         revenue_collected: 98.6,
-        trend: "stable"
+        trend: "stable",
+        coordinates: [77.16, 28.68] // Keshavpuram
     }
 ];
 
