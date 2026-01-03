@@ -429,6 +429,8 @@ router.get('/employee/:employeeId', async (req, res) => {
     }
 });
 
+const Credit = require('../models/Credit');
+
 /**
  * GET /attendance/analytics/:employeeId
  * Get weekly attendance analytics for performance chart
@@ -440,6 +442,16 @@ router.get('/analytics/:employeeId', async (req, res) => {
 
         const now = new Date();
         const analytics = [];
+
+        // Fetch credit data for current month
+        const currentMonth = now.getMonth() + 1; // 1-12
+        const currentYear = now.getFullYear();
+
+        const creditDoc = await Credit.findOne({
+            employeeId,
+            month: currentMonth,
+            year: currentYear
+        });
 
         // Calculate for each week going backwards
         for (let i = weeks - 1; i >= 0; i--) {
@@ -464,15 +476,30 @@ router.get('/analytics/:employeeId', async (req, res) => {
             const totalDays = 7;
             const attendancePercentage = ((presentDays / totalDays) * 100).toFixed(1);
 
+            // Map credit based on week number (1-4)
+            // Analytics loop: i=3 (Week 1), i=2 (Week 2), i=1 (Week 3), i=0 (Week 4) roughly
+            // Wait, loop is i = weeks-1 down to 0. 
+            // If weeks=4: i=3 (oldest), i=0 (newest/current).
+            // WeekNumber in response is weeks - i => 4-3=1, 4-0=4.
+            const weekNum = weeks - i;
+            let weeklyCredit = 0;
+            if (creditDoc) {
+                if (weekNum === 1) weeklyCredit = creditDoc.week1 || 0;
+                if (weekNum === 2) weeklyCredit = creditDoc.week2 || 0;
+                if (weekNum === 3) weeklyCredit = creditDoc.week3 || 0;
+                if (weekNum === 4) weeklyCredit = creditDoc.week4 || 0;
+            }
+
             analytics.push({
-                weekNumber: weeks - i,
+                weekNumber: weekNum,
                 weekStart: weekStart.toISOString().split('T')[0],
                 weekEnd: weekEnd.toISOString().split('T')[0],
                 presentDays,
                 totalDays,
                 attendancePercentage: parseFloat(attendancePercentage),
-                tasksCompleted: presentDays, // Using present days as tasks for now
-                quality: parseFloat(attendancePercentage)
+                tasksCompleted: presentDays,
+                quality: parseFloat(attendancePercentage),
+                weekCredit: weeklyCredit
             });
         }
 
