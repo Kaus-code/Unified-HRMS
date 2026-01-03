@@ -34,6 +34,7 @@ app.use("/task", require('./src/routes/task'));
 app.use("/challan", require('./src/routes/challan'));
 app.use("/api/recruitment", require('./src/routes/recruitmentRoutes'));
 app.use("/api/verification", require('./src/routes/verificationRoutes'));
+app.use("/deputy", require('./src/routes/deputy'));
 
 app.listen(PORT, async () => {
     console.log(`Server running on port http://localhost:${PORT}`);
