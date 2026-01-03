@@ -3,6 +3,7 @@ import { X, Send, Sparkles } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { Avatar } from "@heroui/avatar";
 
+import ReactMarkdown from 'react-markdown';
 import Groq from "groq-sdk";
 
 const groq = new Groq({
@@ -184,12 +185,17 @@ const ChatAssistant = () => {
                             >
                                 <div className={`flex flex-col gap-1 max-w-[85%]`}>
                                     <div
-                                        className={`p-3.5 text-sm leading-relaxed whitespace-pre-wrap ${msg.sender === 'user'
+                                        className={`p-3.5 text-sm leading-relaxed ${msg.sender === 'user'
                                             ? 'bg-gradient-to-br from-[#6F42C1] to-[#8B5CF6] text-white rounded-2xl rounded-br-md shadow-lg shadow-purple-500/20'
                                             : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-gray-100 dark:border-gray-700 rounded-2xl rounded-bl-md shadow-sm'
                                             }`}
                                     >
-                                        {msg.text}
+                                        <div className={`prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0 ${msg.sender === 'user' ? 'prose-invert' : 'dark:prose-invert'
+                                            }`}>
+                                            <ReactMarkdown>
+                                                {msg.text}
+                                            </ReactMarkdown>
+                                        </div>
                                     </div>
                                     <span className={`text-[10px] text-gray-400 dark:text-gray-500 ${msg.sender === 'user' ? 'text-right' : 'text-left'}`}>
                                         {formatTime(msg.timestamp)}
