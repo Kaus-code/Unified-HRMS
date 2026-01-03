@@ -34,7 +34,7 @@
  * @param {number} approvedLeaves - Approved leave days
  * @returns {Object} detailed salary structure
  */
-const calculateExpectedSalary = (user, daysPresent, daysPassedInMonth, approvedLeaves = 0) => {
+const calculateExpectedSalary = (user, daysPresent, daysPassedInMonth, approvedLeaves = 0, accruedFines = 0) => {
     const baseSalary = user.baseSalary || 45000;
     const isPermanent = user.employmentStatus === 'Permanent';
 
@@ -43,7 +43,7 @@ const calculateExpectedSalary = (user, daysPresent, daysPassedInMonth, approvedL
         baseSalary,
         allowances: { da: 0, hra: 0, ta: 0 },
         gross: 0,
-        deductions: { pf: 0, tax: 0, lop: 0 },
+        deductions: { pf: 0, tax: 0, lop: 0, fine: accruedFines }, // Added fine to deductions
         projectedNet: 0,
         isEstimate: false,
         breakdown: {}
@@ -64,16 +64,12 @@ const calculateExpectedSalary = (user, daysPresent, daysPassedInMonth, approvedL
         structure.gross = potentialGross;
 
         // 3. Loss of Pay (LOP)
-        // Chargeable Absence = Days Passed - Days Present - Approved Leaves
         const absentDays = Math.max(0, daysPassedInMonth - daysPresent - approvedLeaves);
-
-        // LOP Calculation: Pro-rated on Gross / 30
         const perDayGross = potentialGross / 30;
         const lopAmount = Math.round(perDayGross * absentDays);
         structure.deductions.lop = lopAmount;
 
         // 4. Statutory Deductions
-        // PF = 12% of (Base + DA)
         const pf = Math.round(0.12 * (baseSalary + da));
         const tax = 200;
 
@@ -81,24 +77,23 @@ const calculateExpectedSalary = (user, daysPresent, daysPassedInMonth, approvedL
         structure.deductions.tax = tax;
 
         // 5. Net Calculation
-        structure.projectedNet = Math.round(potentialGross - lopAmount - pf - tax);
+        // Subtract fines from the final net amount
+        structure.projectedNet = Math.round(potentialGross - lopAmount - pf - tax - accruedFines);
 
         // 6. Messaging Flags
-        // If daysPassed < 30 (approx), it's an estimate subject to future attendance
         if (daysPassedInMonth < 30) {
             structure.isEstimate = true;
         }
 
     } else {
         // --- CONTRACTUAL EMPLOYEE LOGIC ---
-
-        // Strictly Accrual: (Base / 30) * DaysPresent
         const perDayBase = baseSalary / 30;
         const earnedAmount = Math.round(perDayBase * daysPresent);
 
-        structure.gross = earnedAmount; // "Gross" for contractual is just what they earned
-        structure.projectedNet = earnedAmount;
-        structure.isEstimate = true; // Always an estimate until month ends
+        structure.gross = earnedAmount;
+        // Subtract fines from contractual earnings as well
+        structure.projectedNet = Math.round(earnedAmount - accruedFines);
+        structure.isEstimate = true;
     }
 
     return structure;

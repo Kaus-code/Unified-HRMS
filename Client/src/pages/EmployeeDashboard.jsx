@@ -49,9 +49,17 @@ const EmployeeDashboard = () => {
         const parsedUser = JSON.parse(storedUser);
 
         // RBAC: Strict Role Check
-        if (parsedUser.role !== 'Employee') {
-          console.warn("Unauthorized access attempt: Role mismatch");
-          navigate('/verify-employee');
+        // Allow access to all roles EXCEPT the ones with their own dedicated dashboards
+        // This corresponds to the 'else' logic in EmployeeVerification.jsx
+        const restrictedRoles = ['Commissioner', 'Deputy Commissioner', 'Sanitary Inspector'];
+
+        if (restrictedRoles.includes(parsedUser.role)) {
+          console.warn(`Unauthorized access attempt: ${parsedUser.role} trying to access Employee Dashboard`);
+          // Redirect to their correct dashboard
+          if (parsedUser.role === 'Commissioner') navigate('/admin');
+          else if (parsedUser.role === 'Deputy Commissioner') navigate('/deputy-commissioner');
+          else if (parsedUser.role === 'Sanitary Inspector') navigate('/sanitary-inspector');
+          else navigate('/verify-employee');
           return;
         }
 

@@ -355,12 +355,6 @@ const RecruitmentPage = () => {
                                         <span className="font-mono text-gray-900 dark:text-white">{candidate._id?.substring(0, 8).toUpperCase()}</span>
                                     </div>
                                 </div>
-
-                                <div className="mt-8">
-                                    <button onClick={() => window.location.reload()} className="text-purple-600 font-medium hover:underline">
-                                        Check Another Application
-                                    </button>
-                                </div>
                             </div>
                         )}
 

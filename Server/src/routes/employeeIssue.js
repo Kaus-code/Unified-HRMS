@@ -110,8 +110,11 @@ router.get('/employee/:employeeId', async (req, res) => {
 
 router.get('/count/:employeeId', async (req, res) => {
     try {
-        const employeeIssues = await EmployeeIssue.find({ Eid: req.params.employeeId });
-        res.json({ issueCount: employeeIssues.length, success: true });
+        const openIssueCount = await EmployeeIssue.countDocuments({
+            Eid: req.params.employeeId,
+            Status: { $ne: 'Resolved' }
+        });
+        res.json({ issueCount: openIssueCount, success: true });
     } catch (error) {
         console.error('Error fetching employee issues:', error);
         res.status(500).json({ message: 'Internal server error', success: false });

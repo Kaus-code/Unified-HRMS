@@ -212,11 +212,23 @@ router.get('/structure/:employeeId', async (req, res) => {
         const daysElapsed = now.getDate(); // e.g., 3rd day
         const presentDays = attendanceRecords.filter(r => r.status === 'present' || r.checkInTime).length;
 
+        // Fetch accrued fines from current month's payroll record
+        const currentMonth = now.getMonth() + 1;
+        const currentYear = now.getFullYear();
+
+        const payrollRecord = await Payroll.findOne({
+            userId: user._id,
+            monthIndex: currentMonth,
+            year: currentYear
+        });
+
+        const accruedFines = payrollRecord ? (payrollRecord.fine || 0) : 0;
+
         // TODO: Fetch approved leaves from a Leave model if/when implemented
         const approvedLeaves = 0;
         const absentDays = Math.max(0, daysElapsed - presentDays - approvedLeaves);
 
-        const salaryStructure = calculateExpectedSalary(user, presentDays, daysElapsed, approvedLeaves);
+        const salaryStructure = calculateExpectedSalary(user, presentDays, daysElapsed, approvedLeaves, accruedFines);
 
         let warningMessage = null;
         if (salaryStructure.isEstimate) {

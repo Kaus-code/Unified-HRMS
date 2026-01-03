@@ -49,8 +49,13 @@ const SISpecialTasks = ({ language = 'en', currentUser }) => {
         fetchEmployees();
     }, [currentUser]);
 
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const handleCreateTask = async (e) => {
         e.preventDefault();
+        if (isSubmitting) return;
+
+        setIsSubmitting(true);
         try {
             const response = await fetch(`${import.meta.env.VITE_BACKEND_URI}/task/create`, {
                 method: 'POST',
@@ -66,10 +71,12 @@ const SISpecialTasks = ({ language = 'en', currentUser }) => {
                 setShowCreateModal(false);
                 setNewTask({ title: '', description: '', assignedTo: '', deadline: '' });
                 fetchTasks();
-                alert(language === 'en' ? 'Task assigned successfully' : 'कार्य सफलतापूर्वक सौंपा गया');
+                // alert removed as per user request
             }
         } catch (error) {
             console.error("Error creating task:", error);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
