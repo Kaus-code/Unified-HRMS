@@ -518,5 +518,73 @@ router.get('/analytics/:employeeId', async (req, res) => {
     }
 });
 
+/**
+ * GET /attendance/ward/:wardId/today
+ * Get today's attendance checklist for all employees in a ward
+ */
+router.get('/ward/:wardId/today', async (req, res) => {
+    try {
+        const { wardId } = req.params;
+        const wardNum = parseInt(wardId);
+
+        // 1. Get all employees in Ward
+        const employees = await User.find({ Ward: wardNum, role: { $in: ['Worker', 'Staff'] } });
+
+        // 2. Get today's attendance records
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const employeeIds = employees.map(e => e.employeeId);
+        const attendanceRecords = await Attendance.find({
+            employeeId: { $in: employeeIds },
+            date: {
+                $gte: today,
+                $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000)
+            }
+        });
+
+        // 3. Map to DTO
+        const attendanceList = employees.map(emp => {
+            const record = attendanceRecords.find(r => r.employeeId === emp.employeeId);
+            let status = 'Absent';
+            let checkIn = '--';
+
+            if (record) {
+                if (record.status === 'present' || record.checkInTime) {
+                    status = 'Present';
+                    // Check if late (after 9:15 AM)
+                    const checkInTime = new Date(record.checkInTime);
+                    const limitTime = new Date(today);
+                    limitTime.setHours(9, 15, 0);
+
+                    if (checkInTime > limitTime) {
+                        status = 'Late';
+                    }
+
+                    checkIn = checkInTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                } else if (record.status === 'leave') {
+                    status = 'On Leave';
+                }
+            }
+
+            return {
+                id: emp.employeeId,
+                name: emp.name,
+                role: emp.role || 'Worker',
+                location: record?.location?.address || `Ward ${wardNum}`,
+                status: status,
+                checkIn: checkIn,
+                image: `https://ui-avatars.com/api/?name=${emp.name.replace(' ', '+')}&background=random`
+            };
+        });
+
+        res.json({ success: true, attendance: attendanceList });
+
+    } catch (error) {
+        console.error("Error fetching ward attendance:", error);
+        res.status(500).json({ success: false, message: "Server Error" });
+    }
+});
+
 module.exports = router;
 

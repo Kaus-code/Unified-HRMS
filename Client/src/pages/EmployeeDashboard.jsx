@@ -1031,6 +1031,7 @@ const EmployeeDashboard = () => {
 
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('General');
   const [recentIssues, setRecentIssues] = useState([]);
   const [selectedIssue, setSelectedIssue] = useState(null);
 
@@ -1093,7 +1094,8 @@ const EmployeeDashboard = () => {
         body: JSON.stringify({
           employeeId: user.employeeId,
           title: subject,
-          description: description
+          description: description,
+          category: category
         })
       });
 
@@ -1103,6 +1105,7 @@ const EmployeeDashboard = () => {
         alert(language === 'en' ? "Issue reported successfully!" : "समस्या सफलतापूर्वक रिपोर्ट की गई!");
         setSubject('');
         setDescription('');
+        setCategory('General');
       } else {
         alert(result.message || "Failed to report issue.");
       }
@@ -1127,6 +1130,17 @@ const EmployeeDashboard = () => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{language === 'en' ? 'Description' : 'विवरण'}</label>
                 <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows="4" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-purple-500 outline-none transition-all resize-none" placeholder={language === 'en' ? 'Detailed description...' : 'विस्तृत विवरण...'}></textarea>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{language === 'en' ? 'Category' : 'श्रेणी'}</label>
+                <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-purple-500 outline-none transition-all cursor-pointer">
+                  <option value="General">{language === 'en' ? 'General' : 'सामान्य'}</option>
+                  <option value="Vector Control">{language === 'en' ? 'Vector Control (Mosquitoes/Pests)' : 'वेक्टर नियंत्रण (मच्छर/कीट)'}</option>
+                  <option value="Drainage">{language === 'en' ? 'Drainage' : 'जल निकासी'}</option>
+                  <option value="Garbage">{language === 'en' ? 'Garbage Collection' : 'कचरा संग्रहण'}</option>
+                </select>
+              </div>
+
               <button onClick={handleSubmitIssue} className="w-full cursor-pointer bg-[#6F42C1] hover:bg-[#5a32a3] text-white font-bold py-3.5 rounded-xl shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2 transition-all">
                 <Send size={18} />
                 {language === 'en' ? 'Submit Report' : 'रिपोर्ट भेजें'}

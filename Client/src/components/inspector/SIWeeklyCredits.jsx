@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Star, Search, Users, Trophy, Award, AlertTriangle, Loader, CheckCircle } from 'lucide-react';
 
-const SIWeeklyCredits = ({ language = 'en' }) => {
+const SIWeeklyCredits = ({ language = 'en', currentUser }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [creditValue, setCreditValue] = useState(7);
     const [employees, setEmployees] = useState([]);
@@ -30,25 +30,28 @@ const SIWeeklyCredits = ({ language = 'en' }) => {
         const fetchEmployees = async () => {
             setIsLoading(true);
             try {
-                // Get ward from localStorage first (don't use state initially)
-                let currentWard = 42; // Default fallback
-                const storedData = localStorage.getItem('verifiedUser');
-                if (storedData) {
-                    try {
-                        const userData = JSON.parse(storedData);
-                        console.log('[Credit System] User data from localStorage:', userData);
-                        if (userData.Ward !== undefined && userData.Ward !== null) {
-                            currentWard = parseInt(userData.Ward);
-                            setWardNumber(currentWard);
-                        }
-                        if (userData.employeeId) {
-                            setAssignedBy(userData.employeeId);
-                        }
-                    } catch (parseError) {
-                        console.error('[Credit System] Error parsing localStorage:', parseError);
-                    }
+                let currentWard = 42;
+
+                if (currentUser?.Ward) {
+                    currentWard = parseInt(currentUser.Ward);
+                    setWardNumber(currentWard);
+                    setAssignedBy(currentUser.employeeId);
                 } else {
-                    console.warn('[Credit System] No verifiedUser found in localStorage');
+                    const storedData = localStorage.getItem('verifiedUser');
+                    if (storedData) {
+                        try {
+                            const userData = JSON.parse(storedData);
+                            if (userData.Ward !== undefined && userData.Ward !== null) {
+                                currentWard = parseInt(userData.Ward);
+                                setWardNumber(currentWard);
+                            }
+                            if (userData.employeeId) {
+                                setAssignedBy(userData.employeeId);
+                            }
+                        } catch (parseError) {
+                            console.error('[Credit System] Error parsing localStorage:', parseError);
+                        }
+                    }
                 }
 
                 console.log('[Credit System] Fetching employees for ward:', currentWard);
@@ -56,19 +59,19 @@ const SIWeeklyCredits = ({ language = 'en' }) => {
                 const response = await fetch(
                     `${import.meta.env.VITE_BACKEND_URI}/credit/employees/${currentWard}`
                 );
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
                 const data = await response.json();
                 console.log('[Credit System] API Response:', data);
-                
+
                 if (data.success) {
                     const empList = data.employees || [];
                     setEmployees(empList);
                     console.log(`[Credit System] Successfully loaded ${empList.length} employees for ward ${currentWard}`);
-                    
+
                     if (empList.length === 0) {
                         console.warn(`[Credit System] No employees found for ward ${currentWard}. Please check if employees are assigned to this ward in the database.`);
                     }
@@ -139,7 +142,7 @@ const SIWeeklyCredits = ({ language = 'en' }) => {
             const response = await fetch(
                 `${import.meta.env.VITE_BACKEND_URI}/credit/employees/${currentWard}`
             );
-            
+
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('[Credit System] Refresh HTTP error:', response.status, errorText);
@@ -148,7 +151,7 @@ const SIWeeklyCredits = ({ language = 'en' }) => {
 
             const data = await response.json();
             console.log('[Credit System] Refresh API Response:', data);
-            
+
             if (data.success) {
                 const empList = data.employees || [];
                 setEmployees(empList);
@@ -216,7 +219,7 @@ const SIWeeklyCredits = ({ language = 'en' }) => {
             return;
         }
 
-        if (!confirm(language === 'en' 
+        if (!confirm(language === 'en'
             ? `Assign credit ${creditValue} to all remaining employees for Week ${activeWeek}? This action cannot be undone.`
             : `सप्ताह ${activeWeek} के लिए सभी शेष कर्मचारियों को क्रेडिट ${creditValue} असाइन करें? यह कार्रवाई पूर्ववत नहीं की जा सकती।`)) {
             return;
@@ -239,7 +242,7 @@ const SIWeeklyCredits = ({ language = 'en' }) => {
 
             const data = await response.json();
             if (data.success) {
-                alert(language === 'en' 
+                alert(language === 'en'
                     ? `Credits assigned to ${data.assignedCount} employees!`
                     : `${data.assignedCount} कर्मचारियों को क्रेडिट असाइन किए गए!`);
                 // Refresh credits
@@ -366,13 +369,13 @@ const SIWeeklyCredits = ({ language = 'en' }) => {
                         <div className="text-center py-12">
                             <Users className="mx-auto text-gray-300 dark:text-gray-600 mb-3" size={48} />
                             <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">
-                                {language === 'en' 
-                                    ? `No employees found for Ward ${wardNumber}` 
+                                {language === 'en'
+                                    ? `No employees found for Ward ${wardNumber}`
                                     : `वार्ड ${wardNumber} के लिए कोई कर्मचारी नहीं मिला`}
                             </p>
                             <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
-                                {language === 'en' 
-                                    ? 'Make sure employees are assigned to this ward in the database' 
+                                {language === 'en'
+                                    ? 'Make sure employees are assigned to this ward in the database'
                                     : 'सुनिश्चित करें कि कर्मचारी डेटाबेस में इस वार्ड को असाइन किए गए हैं'}
                             </p>
                             <button
@@ -387,7 +390,7 @@ const SIWeeklyCredits = ({ language = 'en' }) => {
                             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
                                 {language === 'en' ? 'Employees' : 'कर्मचारी'} ({filteredEmployees.length})
                             </p>
-                            
+
                             {/* Employees without credit for this week */}
                             {employeesWithoutCredit.map(emp => {
                                 const credits = assignedCredits[emp.employeeId] || {};
@@ -406,11 +409,10 @@ const SIWeeklyCredits = ({ language = 'en' }) => {
                                             {/* Week credits display */}
                                             <div className="flex gap-1">
                                                 {[1, 2, 3, 4].map(w => (
-                                                    <div key={w} className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${
-                                                        w === activeWeek ? 'bg-amber-500 text-white' :
-                                                        credits[`week${w}`] > 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
-                                                        'bg-gray-100 dark:bg-gray-700 text-gray-400'
-                                                    }`}>
+                                                    <div key={w} className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${w === activeWeek ? 'bg-amber-500 text-white' :
+                                                            credits[`week${w}`] > 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
+                                                                'bg-gray-100 dark:bg-gray-700 text-gray-400'
+                                                        }`}>
                                                         {credits[`week${w}`] || 0}
                                                     </div>
                                                 ))}
@@ -453,11 +455,10 @@ const SIWeeklyCredits = ({ language = 'en' }) => {
                                                 <div className="flex items-center gap-3">
                                                     <div className="flex gap-1">
                                                         {[1, 2, 3, 4].map(w => (
-                                                            <div key={w} className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${
-                                                                w === activeWeek ? 'bg-amber-500 text-white' :
-                                                                credits[`week${w}`] > 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
-                                                                'bg-gray-100 dark:bg-gray-700 text-gray-400'
-                                                            }`}>
+                                                            <div key={w} className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${w === activeWeek ? 'bg-amber-500 text-white' :
+                                                                    credits[`week${w}`] > 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
+                                                                        'bg-gray-100 dark:bg-gray-700 text-gray-400'
+                                                                }`}>
                                                                 {credits[`week${w}`] || 0}
                                                             </div>
                                                         ))}
@@ -536,7 +537,7 @@ const SIWeeklyCredits = ({ language = 'en' }) => {
                     <div className="mt-4 flex items-center gap-2 text-xs text-indigo-300 justify-center">
                         <AlertTriangle size={12} />
                         <span>
-                            {language === 'en' 
+                            {language === 'en'
                                 ? `Action cannot be undone for Week ${activeWeek}`
                                 : `सप्ताह ${activeWeek} के लिए कार्रवाई पूर्ववत नहीं की जा सकती`}
                         </span>
