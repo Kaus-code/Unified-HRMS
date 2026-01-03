@@ -10,6 +10,7 @@ const payrollSchema = new mongoose.Schema({
     overtimeHours: Number,
     taxDeductions: Number,
     pfDeductions: Number,
+    fine: { type: Number, default: 0 },
     netAmount: Number,
     status: {
         type: String,

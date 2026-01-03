@@ -12,7 +12,9 @@ router.post('/', async (req, res) => {
         }
 
         // Fetch user to get ward
+        console.log(`[EmployeeIssue] Reporting issue for ID: ${employeeId}`);
         const user = await Users.findOne({ employeeId });
+        console.log(`[EmployeeIssue] User found: ${user ? 'Yes' : 'No'}, Ward: ${user?.Ward}, Category: ${category}`);
 
         const employeeIssue = new EmployeeIssue({
             Eid: employeeId,

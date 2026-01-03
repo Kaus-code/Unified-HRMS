@@ -243,8 +243,16 @@ router.get('/structure/:employeeId', async (req, res) => {
 router.get('/ward/:wardId', async (req, res) => {
     try {
         const { wardId } = req.params;
-        const wardNum = parseInt(wardId);
-        const users = await User.find({ Ward: wardNum, role: { $in: ['Worker', 'Staff'] } });
+
+        let wardQuery = { Ward: wardId };
+        if (!isNaN(wardId)) {
+            wardQuery = { Ward: Number(wardId) };
+        }
+
+        const users = await User.find({
+            ...wardQuery,
+            role: { $ne: 'Sanitary Inspector' } // Fetch everyone EXCEPT the inspector (Workers, Staff, etc.)
+        });
 
         const summary = await Promise.all(users.map(async (user) => {
             const now = new Date();
@@ -265,13 +273,13 @@ router.get('/ward/:wardId', async (req, res) => {
 
             return {
                 id: user.employeeId,
-                name: user.firstName + ' ' + user.lastName,
-                role: user.designation || 'Worker',
+                name: user.name,
+                role: user.employmentStatus === 'Contractual' ? 'Contractual' : (user.role || 'Worker'),
                 performance: attendancePerm,
                 salary: salaryStructure.projectedNet.toLocaleString(),
                 overtime: '0 hrs',
                 attendance: attendancePerm + '%',
-                phone: user.phoneNumber,
+                phone: user.email, // Using email as contact since phone is missing from schema
                 baseSalary: (user.baseSalary || 15000).toLocaleString()
             };
         }));

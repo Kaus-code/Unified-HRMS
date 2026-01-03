@@ -20,11 +20,21 @@ const SIIssueTracker = ({ language = 'en', currentUser }) => {
     ];
 
     const fetchIssues = async () => {
-        if (!currentUser?.Ward) return;
+        console.log("[SIIssueTracker] Fetching issues. Current User:", currentUser);
+        if (!currentUser?.Ward) {
+            console.warn("[SIIssueTracker] No Ward found in currentUser. Aborting fetch.");
+            return;
+        }
+
         setLoading(true);
         try {
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URI}/employee-issue/ward/${currentUser.Ward}`);
+            const url = `${import.meta.env.VITE_BACKEND_URI}/employee-issue/ward/${currentUser.Ward}`;
+            console.log("[SIIssueTracker] Requesting URL:", url);
+
+            const response = await fetch(url);
             const data = await response.json();
+            console.log("[SIIssueTracker] Response:", data);
+
             if (data.success) {
                 setIssues(data.issues);
             }
@@ -36,6 +46,7 @@ const SIIssueTracker = ({ language = 'en', currentUser }) => {
     };
 
     useEffect(() => {
+        console.log("[SIIssueTracker] Component Mounted/Updated. Current User:", currentUser);
         fetchIssues();
     }, [currentUser]);
 

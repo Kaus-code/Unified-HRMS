@@ -4,7 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useClerk } from '@clerk/clerk-react';
 import {
   PieChart as ChartIcon, Users, AlertCircle, Star, LogOut, LayoutDashboard,
-  ClipboardCheck, BadgeIndianRupee
+  ClipboardCheck, BadgeIndianRupee, ClipboardList, Archive, ShieldAlert
 } from 'lucide-react';
 
 // Import Dashboard Components
@@ -14,6 +14,8 @@ import SIPerformancePayroll from '../components/inspector/SIPerformancePayroll';
 import SIIssueTracker from '../components/inspector/SIIssueTracker';
 import SIEnforcement from '../components/inspector/SIEnforcement';
 import SIWeeklyCredits from '../components/inspector/SIWeeklyCredits';
+import SIInventory from '../components/inspector/SIInventory';
+import SISpecialTasks from '../components/inspector/SISpecialTasks';
 
 const SanitaryInspectorDashboard = () => {
   const { language } = useLanguage();
@@ -34,9 +36,11 @@ const SanitaryInspectorDashboard = () => {
   const menuItems = [
     { icon: LayoutDashboard, label: language === 'en' ? 'Overview' : 'अवलोकन', id: 'Overview' },
     { icon: ClipboardCheck, label: language === 'en' ? 'Attendance Monitor' : 'उपस्थिति निगरानी', id: 'Attendance' },
-    { icon: BadgeIndianRupee, label: language === 'en' ? 'Performance & Payroll' : 'प्रदर्शन और वेतन', id: 'Payroll' },
     { icon: AlertCircle, label: language === 'en' ? 'Issue Tracker' : 'मुद्दा ट्रैकर', id: 'Issues' },
     { icon: Star, label: language === 'en' ? 'Credit System' : 'क्रेडिट सिस्टम', id: 'Credits' },
+    { id: 'Enforcement', label: language === 'en' ? 'Enforcement' : 'प्रवर्तन (Challan)', icon: ShieldAlert },
+    { id: 'special-tasks', label: language === 'en' ? 'Special Tasks' : 'विशेष कार्य', icon: ClipboardList },
+    { id: 'Inventory', label: language === 'en' ? 'Inventory' : 'सामग्री', icon: Archive }
   ];
 
   const renderContent = () => {
@@ -53,6 +57,10 @@ const SanitaryInspectorDashboard = () => {
         return <SIIssueTracker language={language} currentUser={userData} />;
       case 'Credits':
         return <SIWeeklyCredits language={language} currentUser={userData} />;
+      case 'special-tasks':
+        return <SISpecialTasks language={language} currentUser={userData} />;
+      case 'Inventory':
+        return <SIInventory language={language} currentUser={userData} />;
       default:
         return <SIOverview language={language} />;
     }
@@ -93,7 +101,7 @@ const SanitaryInspectorDashboard = () => {
                   <p className="text-gray-900 dark:text-white font-semibold text-sm flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                     {userData?.Ward
-                      ? (language === 'en' ? `Ward ${userData.Ward} - ${userData.Zone || 'General'}` : `वार्ड ${userData.Ward} - ${userData.Zone || 'सामान्य'}`)
+                      ? (language === 'en' ? `Ward ${userData.Ward} - ${userData.Zone || 'General'} ` : `वार्ड ${userData.Ward} - ${userData.Zone || 'सामान्य'} `)
                       : (language === 'en' ? 'Loading...' : 'लोड हो रहा है...')}
                   </p>
                 </div>

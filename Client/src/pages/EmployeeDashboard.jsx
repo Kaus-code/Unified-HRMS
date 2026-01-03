@@ -19,7 +19,8 @@ import {
   AlertTriangle,
   Loader,
   Download,
-  FileText
+  FileText,
+  ClipboardList
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, ComposedChart, Line, Legend } from 'recharts';
 import jsPDF from 'jspdf';
@@ -47,6 +48,43 @@ const EmployeeDashboard = () => {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [isWithinCheckInTime, setIsWithinCheckInTime] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Tasks State
+  const [myTasks, setMyTasks] = useState([]);
+  const [loadingTasks, setLoadingTasks] = useState(false);
+
+  const fetchMyTasks = async () => {
+    if (!employeeId) return;
+    setLoadingTasks(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URI}/task/employee/${employeeId}`);
+      const data = await response.json();
+      if (data.success) setMyTasks(data.tasks);
+    } catch (err) { console.error(err); }
+    finally { setLoadingTasks(false); }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'tasks') fetchMyTasks();
+  }, [activeTab, employeeId]);
+
+  const handleCompleteTask = async (taskId) => {
+    const link = prompt("Enter Proof Image URL (e.g., https://imgur.com/example.jpg):");
+    if (!link) return;
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URI}/task/complete/${taskId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ proofImage: link })
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert("Task submitted for verification!");
+        fetchMyTasks();
+      }
+    } catch (err) { console.error(err); }
+  };
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
@@ -1385,6 +1423,69 @@ const EmployeeDashboard = () => {
     </div>
   );
 
+  const TasksSection = () => (
+    <div className="space-y-6 animate-in fade-in zoom-in duration-300">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">{language === 'en' ? 'My Tasks' : 'मेरे कार्य'}</h2>
+        <button
+          onClick={fetchMyTasks}
+          className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          title="Refresh"
+        >
+          <Loader className={loadingTasks ? "animate-spin" : ""} size={16} />
+        </button>
+      </div>
+
+      <div className="grid gap-4">
+        {myTasks.length === 0 && (
+          <div className="text-center py-10 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
+            <ClipboardList className="mx-auto h-10 w-10 text-gray-400 mb-2" />
+            <p className="text-gray-500 dark:text-gray-400">No tasks assigned yet.</p>
+          </div>
+        )}
+        {myTasks.map(task => (
+          <div key={task._id} className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col md:flex-row justify-between gap-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <h3 className="font-bold text-lg text-gray-800 dark:text-white">{task.title}</h3>
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${task.status === 'Pending' ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800' :
+                  task.status === 'Completed' ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800' :
+                    task.status === 'Verified' ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800' :
+                      'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800'
+                  }`}>{task.status}</span>
+              </div>
+              <p className="text-gray-600 dark:text-gray-300 text-sm whitespace-pre-wrap">{task.description}</p>
+              <div className="flex items-center gap-2 text-xs text-gray-400">
+                <Clock size={12} /> Deadline: {new Date(task.deadline).toLocaleString()}
+              </div>
+
+              {task.status === 'Fined' && (
+                <div className="flex items-center gap-2 text-red-600 font-bold text-sm mt-2">
+                  <AlertTriangle size={16} /> Fine Levied: ₹{task.fineAmount}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-end md:items-center">
+              {task.status === 'Pending' ? (
+                <button
+                  onClick={() => handleCompleteTask(task._id)}
+                  className="px-5 py-2.5 bg-[#6F42C1] text-white rounded-xl text-sm font-bold hover:bg-[#5a32a3] shadow-lg shadow-purple-500/20 transition-all flex items-center gap-2"
+                >
+                  <Send size={16} /> {language === 'en' ? 'Submit Proof' : 'प्रमाण भेजें'}
+                </button>
+              ) : task.proofImage ? (
+                <a href={task.proofImage} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-indigo-600 hover:underline flex items-center gap-1">
+                  <FileText size={14} /> View Proof
+                </a>
+              ) : null}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   const renderContent = () => {
     switch (activeTab) {
       case 'overview': return OverviewSection();
@@ -1392,6 +1493,7 @@ const EmployeeDashboard = () => {
       case 'attendance': return AttendanceSection();
       case 'issues': return IssuesSection();
       case 'performance': return PerformanceSection();
+      case 'tasks': return TasksSection();
       default: return OverviewSection();
     }
   };

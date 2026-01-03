@@ -28,6 +28,8 @@ app.use("/attendance", attendanceRoute);
 app.use("/payroll", require('./src/routes/payroll'));
 app.use("/credit", require('./src/routes/credit'));
 app.use("/inspector", require('./src/routes/inspector'));
+app.use("/task", require('./src/routes/task'));
+app.use("/challan", require('./src/routes/challan'));
 
 
 
