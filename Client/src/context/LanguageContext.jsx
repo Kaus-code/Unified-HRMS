@@ -12,6 +12,7 @@ const translations = {
         employeeCorner: "Employee Corner",
         search: "Search services...",
         searchPlaceholder: "Search...",
+        recruitmentPortal: "Recruitment Portal",
         login: "Login",
         signup: "Sign Up",
         switchLang: "हिन्दी", // Label to switch TO
@@ -134,6 +135,7 @@ const translations = {
         employeeCorner: "कर्मचारी कॉर्नर",
         search: "सेवाएं खोजें...",
         searchPlaceholder: "खोजें...",
+        recruitmentPortal: "भर्ती पोर्टल",
         login: "लॉगिन",
         signup: "साइन अप",
         switchLang: "English",
