@@ -5,6 +5,8 @@ const cors = require('cors');
 const verifyRoute = require('./src/routes/employeeVerify');
 const attendanceRoute = require('./src/routes/attendance');
 const connectDB = require("./src/utils/db");
+const { seedDatabase } = require('./src/controllers/recruitmentController'); // Import Seeder
+
 connectDB();
 
 const bodyParser = require('body-parser');
@@ -26,10 +28,13 @@ app.use("/verify", verifyRoute);
 app.use("/employee-issue", require('./src/routes/employeeIssue'));
 app.use("/attendance", attendanceRoute);
 app.use("/payroll", require('./src/routes/payroll'));
+app.use("/api/recruitment", require('./src/routes/recruitmentRoutes'));
+app.use("/api/verification", require('./src/routes/verificationRoutes'));
 
-
-
-
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
     console.log(`Server running on port http://localhost:${PORT}`);
+
+    // Auto-seed data on startup for permanent persistence
+    console.log("Initializing Permanent Data...");
+    await seedDatabase();
 });
