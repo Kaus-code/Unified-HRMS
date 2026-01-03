@@ -40,8 +40,12 @@ const DUMMY_CANDIDATES = [
 // Reusable Seed Function
 const seedDatabase = async () => {
     try {
-        // Optional: Check if data exists before wiping? 
-        // For "permanent feed" request, we force fresh state to ensure it's always correct.
+        const existingCandidates = await Candidate.countDocuments();
+        if (existingCandidates > 0) {
+            console.log("Database already has data. Skipping re-seed to preserve changes.");
+            return { success: true, message: "Skipped seeding" };
+        }
+
         await Recruitment.deleteMany({});
         await Candidate.deleteMany({});
 
@@ -115,5 +119,52 @@ exports.checkCandidateStatus = async (req, res) => {
     } catch (error) {
         console.error("Check Status Error:", error);
         res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.submitDocuments = async (req, res) => {
+    try {
+        const { enrollmentNumber, driveLink } = req.body;
+
+        if (!enrollmentNumber || !driveLink) {
+            return res.status(400).json({ success: false, message: "Enrollment number and Drive Link are required." });
+        }
+
+        const candidate = await Candidate.findOneAndUpdate(
+            { enrollmentNumber },
+            {
+                documentDriveLink: driveLink,
+                verificationStatus: 'Submitted'
+            },
+            { new: true }
+        );
+
+        if (!candidate) {
+            return res.status(404).json({ success: false, message: "Candidate not found." });
+        }
+
+        res.status(200).json({ success: true, message: "Documents submitted successfully.", candidate });
+
+    } catch (error) {
+        console.error("Submit Documents Error:", error);
+        res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
+
+exports.checkApplicationByEmail = async (req, res) => {
+    try {
+        const email = req.params.email;
+        if (!email) return res.status(400).json({ success: false, message: "Email required" });
+
+        const candidate = await Candidate.findOne({ email: email });
+
+        if (candidate) {
+            return res.status(200).json({ success: true, candidate });
+        } else {
+            return res.status(404).json({ success: false, message: "No application found" });
+        }
+    } catch (error) {
+        console.error("Check App Error:", error);
+        res.status(500).json({ success: false, message: "Server Error" });
     }
 };
