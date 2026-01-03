@@ -17,7 +17,7 @@ const candidateSchema = new mongoose.Schema({
 
     // Uploaded Documents
     reportCard: { type: String }, // Path/Link to uploaded report card
-    documentDriveLink: { type: String }, // User provided Google Drive link
+    submittedDocuments: { type: Object }, // Structure: { "Category": { "DocName": "Link" } }
 
     // AI Verification Metadata
     aiVerificationData: {

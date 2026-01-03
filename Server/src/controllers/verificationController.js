@@ -157,16 +157,16 @@ exports.verifyDocument = async (req, res) => {
 // 2. Submit Documents (Drive Link)
 exports.submitDocuments = async (req, res) => {
     try {
-        const { email, examId, driveLink } = req.body;
+        const { email, examId, documents } = req.body;
 
         const candidate = await Candidate.findOne({ email, examId });
         if (!candidate) return res.status(404).json({ message: "Candidate not found" });
 
-        if (!driveLink || !driveLink.includes('drive.google.com')) {
-            return res.status(400).json({ message: "Invalid Google Drive Link" });
+        if (!documents || Object.keys(documents).length === 0) {
+            return res.status(400).json({ message: "No documents submitted." });
         }
 
-        candidate.documentDriveLink = driveLink;
+        candidate.submittedDocuments = documents;
         candidate.verificationStatus = 'Submitted';
 
         const reviewCase = new ReviewCase({
