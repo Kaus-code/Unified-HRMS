@@ -234,6 +234,66 @@ router.post('/deputy-commissioners/:id/evaluate', async (req, res) => {
     }
 });
 
+// POST /commissioner/deputy-commissioners/:id/notice
+router.post('/deputy-commissioners/:id/notice', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { senderId, subject, message, priority, type } = req.body;
+
+        const notice = new require('../models/Notice')({
+            recipientId: id,
+            senderId,
+            subject,
+            message,
+            priority,
+            type,
+            status: 'Sent'
+        });
+
+        await notice.save();
+
+        res.json({
+            success: true,
+            message: 'Notice sent successfully',
+            notice
+        });
+    } catch (error) {
+        console.error('Error sending notice:', error);
+        res.status(500).json({ success: false, message: 'Error sending notice', error: error.message });
+    }
+});
+
+// POST /commissioner/deputy-commissioners/:id/meeting
+router.post('/deputy-commissioners/:id/meeting', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { organizerId, subject, agenda, date, time, type, link } = req.body;
+
+        const meeting = new require('../models/Meeting')({
+            organizerId,
+            attendees: [id],
+            subject,
+            agenda,
+            date,
+            time,
+            type,
+            link,
+            status: 'Scheduled'
+        });
+
+        await meeting.save();
+
+        res.json({
+            success: true,
+            message: 'Meeting scheduled successfully',
+            meeting
+        });
+    } catch (error) {
+        console.error('Error scheduling meeting:', error);
+        res.status(500).json({ success: false, message: 'Error scheduling meeting', error: error.message });
+    }
+});
+
 // GET /commissioner/deputy-commissioners/stats (OPTIMIZED)
 router.get('/deputy-commissioners/stats', async (req, res) => {
     try {

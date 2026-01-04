@@ -9,7 +9,7 @@ import Navbar from '../components/Navbar';
 import { useLanguage } from '../context/LanguageContext';
 import {
   Home, CheckCircle, BarChart3, Users, Briefcase,
-  FileText, Activity, LogOut, MapPin, DollarSign, Package,
+  FileText, Activity, LogOut, MapPin, DollarSign,
   MessageSquare, TrendingUp
 } from 'lucide-react';
 import { useClerk } from '@clerk/clerk-react';
@@ -27,7 +27,6 @@ import ZonePerformanceAnalytics from '../components/commissioner/ZonePerformance
 import ApprovalCenter from '../components/commissioner/ApprovalCenter';
 import GrievanceMonitoring from '../components/commissioner/GrievanceMonitoring';
 import FinancialOverview from '../components/commissioner/FinancialOverview';
-import InventoryManagement from '../components/commissioner/InventoryManagement';
 import DCManagement from '../components/commissioner/DCManagement';
 
 const CommissionerDashboard = () => {
@@ -65,16 +64,20 @@ const CommissionerDashboard = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Reset scroll on menu change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [activeMenu]);
+
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   // Enhanced menu structure
   const menuItems = [
     { icon: Home, label: language === 'en' ? 'City Overview' : 'शहर अवलोकन', id: 'CityOverview' },
     { icon: MapPin, label: language === 'en' ? 'Zone Analytics' : 'क्षेत्र विश्लेषण', id: 'ZoneAnalytics' },
+    { icon: DollarSign, label: language === 'en' ? 'Financial' : 'वित्तीय', id: 'Financial' },
     { icon: CheckCircle, label: language === 'en' ? 'Approvals' : 'अनुमोदन', id: 'ApprovalCenter' },
     { icon: MessageSquare, label: language === 'en' ? 'Grievances' : 'शिकायतें', id: 'Grievances' },
-    { icon: DollarSign, label: language === 'en' ? 'Financial' : 'वित्तीय', id: 'Financial' },
-    { icon: Package, label: language === 'en' ? 'Inventory' : 'सामग्री', id: 'Inventory' },
     { icon: Users, label: language === 'en' ? 'Deputy Commissioners' : 'उप आयुक्त', id: 'DCManagement' },
     { icon: FileText, label: language === 'en' ? 'Notices' : 'सूचनाएं', id: 'Notices' },
   ];
@@ -85,14 +88,12 @@ const CommissionerDashboard = () => {
         return <CityWideOverview language={language} onNavigate={setActiveMenu} />;
       case 'ZoneAnalytics':
         return <ZonePerformanceAnalytics language={language} />;
+      case 'Financial':
+        return <FinancialOverview language={language} />;
       case 'ApprovalCenter':
         return <ApprovalCenter language={language} />;
       case 'Grievances':
         return <GrievanceMonitoring language={language} />;
-      case 'Financial':
-        return <FinancialOverview language={language} />;
-      case 'Inventory':
-        return <InventoryManagement language={language} />;
       case 'DCManagement':
         return <DCManagement language={language} />;
       case 'Notices':
@@ -114,12 +115,14 @@ const CommissionerDashboard = () => {
 
       <div className="flex">
         {/* Sidebar - Enhanced Design */}
+        {/* Sidebar - Enhanced Design */}
         <aside className={`
-          bg-white dark:bg-[#0f0d24] h-screen
-          fixed lg:sticky left-0 z-40 overflow-y-auto custom-scrollbar
+          bg-white dark:bg-[#0f0d24]
+          fixed lg:sticky left-0 z-40 overflow-y-auto
+          [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]
           border-r border-gray-200 dark:border-white/5
-          transition-[width,transform,top,height] duration-300 ease-in-out
-          ${isScrolled ? 'top-[72px] h-[calc(100vh-72px)]' : 'top-[104px] h-[calc(100vh-104px)]'}
+          transition-[width,transform] duration-300 ease-in-out
+          top-[104px] h-[calc(100vh-104px)]
           ${isSidebarOpen ? 'w-64 translate-x-0' : 'w-64 -translate-x-full lg:translate-x-0 lg:w-20'}
         `}>
           <div className="p-4 flex flex-col h-full">

@@ -39,8 +39,8 @@ const Navbar = ({ onSidebarToggle, alwaysShowToggle }) => {
 
     return (
         <nav className={`w-full sticky top-0 z-50 shadow-md font-sans dark:shadow-gray-800 transition-all duration-300 ease-in-out`} role="navigation" aria-label="Main Navigation">
-            {/* Top Bar - GIGW Compliant - Hides on Scroll */}
-            <div className={`bg-[#6F42C1] text-white px-4 flex justify-between items-center text-xs md:text-sm dark:bg-[#5a32a3] transition-all duration-300 ease-in-out overflow-hidden ${isScrolled ? 'h-0 opacity-0' : 'h-8 py-1.5 opacity-100'}`}>
+            {/* Top Bar - GIGW Compliant */}
+            <div className={`bg-[#6F42C1] text-white px-4 flex justify-between items-center text-xs md:text-sm dark:bg-[#5a32a3] h-8 py-1.5 transition-all duration-300 ease-in-out`}>
                 <div className="flex items-center gap-2">
                     <img src="/flag.png" alt="Indian Tricolor" className="h-4 w-auto object-contain" />
                     <a href="https://india.gov.in" target="_blank" rel="noreferrer" className="hover:underline font-medium flex items-center gap-1" aria-label="Government of India - External site that opens in a new window">

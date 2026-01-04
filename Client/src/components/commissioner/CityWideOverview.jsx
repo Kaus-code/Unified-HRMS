@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Skeleton } from '../ui/skeleton';
 import {
     Users, Building2, TrendingUp, AlertCircle, MapPin, CheckCircle,
-    Clock, Activity, ArrowUpRight, Bell, Zap, MessageSquare, DollarSign, FileText
+    Clock, Activity, ArrowUpRight, Bell, Zap, MessageSquare, DollarSign, FileText,
+    IndianRupee, Briefcase // Added IndianRupee
 } from 'lucide-react';
 import {
-    AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+    AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
     Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
 import DelhiZoneMap from '../dashboard/DelhiZoneMap';
@@ -13,9 +14,26 @@ import DelhiZoneMap from '../dashboard/DelhiZoneMap';
 const CityWideOverview = ({ language, onNavigate }) => {
     const [cityStats, setCityStats] = useState(null);
     const [zoneComparison, setZoneComparison] = useState([]);
-    const [trends, setTrends] = useState([]);
     const [alerts, setAlerts] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    // Mock Data for New Charts
+    const departmentTrends = [
+        { month: 'Jan', Sanitation: 85, Health: 78, Engineering: 65 },
+        { month: 'Feb', Sanitation: 82, Health: 80, Engineering: 68 },
+        { month: 'Mar', Sanitation: 88, Health: 75, Engineering: 72 },
+        { month: 'Apr', Sanitation: 86, Health: 82, Engineering: 75 },
+        { month: 'May', Sanitation: 90, Health: 85, Engineering: 70 },
+        { month: 'Jun', Sanitation: 92, Health: 88, Engineering: 78 },
+    ];
+
+    const budgetStats = [
+        { zone: 'Central', Allocated: 120, Spent: 95 },
+        { zone: 'South', Allocated: 150, Spent: 145 }, // High utilization
+        { zone: 'North', Allocated: 100, Spent: 40 },  // Low utilization
+        { zone: 'West', Allocated: 110, Spent: 115 },  // Over budget
+        { zone: 'East', Allocated: 90, Spent: 60 },
+    ];
 
     useEffect(() => {
         fetchCityData();
@@ -25,21 +43,18 @@ const CityWideOverview = ({ language, onNavigate }) => {
         setLoading(true);
         try {
             // Fetch all data in parallel
-            const [statsRes, zonesRes, trendsRes, alertsRes] = await Promise.all([
+            const [statsRes, zonesRes, alertsRes] = await Promise.all([
                 fetch(`${import.meta.env.VITE_BACKEND_URI}/analytics/city-stats`),
                 fetch(`${import.meta.env.VITE_BACKEND_URI}/analytics/zone-comparison`),
-                fetch(`${import.meta.env.VITE_BACKEND_URI}/analytics/trends/monthly`),
                 fetch(`${import.meta.env.VITE_BACKEND_URI}/analytics/alerts`)
             ]);
 
             const statsData = await statsRes.json();
             const zonesData = await zonesRes.json();
-            const trendsData = await trendsRes.json();
             const alertsData = await alertsRes.json();
 
             if (statsData.success) setCityStats(statsData.stats);
             if (zonesData.success) setZoneComparison(zonesData.zones);
-            if (trendsData.success) setTrends(trendsData.trends);
             if (alertsData.success) setAlerts(alertsData.alerts);
         } catch (error) {
             console.error('Error fetching city data:', error);
@@ -50,23 +65,23 @@ const CityWideOverview = ({ language, onNavigate }) => {
 
     const statCards = cityStats ? [
         {
-            title: language === 'en' ? 'Total Employees' : 'कुल कर्मचारी',
-            value: cityStats.totalEmployees?.toLocaleString() || '0',
-            change: '+2.5%',
+            title: language === 'en' ? 'Revenue Collection' : 'राजस्व संग्रह',
+            value: '₹845 Cr', // Mocked for strategic relevance
+            change: '+12.5%',
             trend: 'up',
-            icon: Users,
-            gradient: 'from-blue-500 to-cyan-500',
-            color: '#3b82f6',
-            target: 'DCManagement'
+            icon: IndianRupee,
+            gradient: 'from-emerald-500 to-teal-600',
+            color: '#059669',
+            target: 'Financial'
         },
         {
             title: language === 'en' ? 'Active Zones' : 'सक्रिय क्षेत्र',
             value: cityStats.totalZones || '0',
-            change: '100%',
+            change: '100% Operational',
             trend: 'stable',
-            icon: Building2,
-            gradient: 'from-purple-500 to-pink-500',
-            color: '#a855f7',
+            icon: MapPin,
+            gradient: 'from-blue-500 to-indigo-600',
+            color: '#4f46e5',
             target: 'ZoneAnalytics'
         },
         {
@@ -74,9 +89,9 @@ const CityWideOverview = ({ language, onNavigate }) => {
             value: `${cityStats.averagePerformance || 0}%`,
             change: cityStats.averagePerformance > 75 ? '+4.2%' : '-1.5%',
             trend: cityStats.averagePerformance > 75 ? 'up' : 'down',
-            icon: TrendingUp,
-            gradient: 'from-emerald-500 to-teal-500',
-            color: '#10b981',
+            icon: Activity,
+            gradient: 'from-purple-500 to-fuchsia-600',
+            color: '#9333ea',
             target: 'ZoneAnalytics'
         },
         {
@@ -85,8 +100,8 @@ const CityWideOverview = ({ language, onNavigate }) => {
             change: cityStats.pendingApprovals > 10 ? 'High' : 'Normal',
             trend: cityStats.pendingApprovals > 10 ? 'up' : 'stable',
             icon: Clock,
-            gradient: 'from-amber-500 to-orange-500',
-            color: '#f59e0b',
+            gradient: 'from-amber-500 to-orange-600',
+            color: '#ea580c',
             target: 'ApprovalCenter'
         }
     ] : [];
@@ -168,7 +183,7 @@ const CityWideOverview = ({ language, onNavigate }) => {
                                     <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                                         {stat.title}
                                     </p>
-                                    <h3 className="text-4xl font-bold text-gray-900 dark:text-white mt-2 tabular-nums">
+                                    <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-2 tabular-nums">
                                         {stat.value}
                                     </h3>
                                 </div>
@@ -243,7 +258,7 @@ const CityWideOverview = ({ language, onNavigate }) => {
                             {alerts.length > 0 ? alerts.map((alert, idx) => (
                                 <div
                                     key={idx}
-                                    className="flex items-start gap-3 p-4 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm"
+                                    className="flex items-start gap-3 p-4 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow"
                                 >
                                     <AlertCircle size={20} className={`flex-shrink-0 mt-0.5 ${alert.priority === 'critical' ? 'text-red-700' : 'text-orange-600'}`} />
                                     <div className="flex-1 min-w-0">
@@ -274,77 +289,60 @@ const CityWideOverview = ({ language, onNavigate }) => {
                 </div>
             </div>
 
-            {/* Charts Row */}
+            {/* NEW Charts Row - Strategic & Actions */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Performance Trends */}
+
+                {/* Chart 1: Department Efficiency Timeline */}
                 <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                        {language === 'en' ? 'City Performance Trends' : 'शहर प्रदर्शन रुझान'}
-                    </h3>
-                    <div className="h-[300px]">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                            {language === 'en' ? 'Department Efficiency Trends' : 'विभाग दक्षता रुझान'}
+                        </h3>
+                        <div className="flex items-center gap-2">
+                            <span className="flex items-center text-xs text-gray-500"><span className="w-2 h-2 rounded-full bg-purple-500 mr-1"></span>Sanitation</span>
+                            <span className="flex items-center text-xs text-gray-500"><span className="w-2 h-2 rounded-full bg-blue-500 mr-1"></span>Health</span>
+                            <span className="flex items-center text-xs text-gray-500"><span className="w-2 h-2 rounded-full bg-orange-500 mr-1"></span>Eng.</span>
+                        </div>
+                    </div>
+                    <div className="h-[320px]">
                         <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={trends}>
-                                <defs>
-                                    <linearGradient id="colorPerformance" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#6F42C1" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#6F42C1" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
+                            <LineChart data={departmentTrends}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} opacity={0.1} />
-                                <XAxis
-                                    dataKey="month"
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fill: '#6b7280', fontSize: 12 }}
-                                />
-                                <YAxis
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fill: '#6b7280', fontSize: 12 }}
-                                />
-                                <Tooltip
-                                    contentStyle={{ borderRadius: '12px', border: 'none', backgroundColor: '#1f2937', color: '#fff' }}
-                                />
-                                <Area
-                                    type="monotone"
-                                    dataKey="performance"
-                                    stroke="#6F42C1"
-                                    fillOpacity={1}
-                                    fill="url(#colorPerformance)"
-                                    strokeWidth={3}
-                                />
-                            </AreaChart>
+                                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
+                                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', backgroundColor: '#1f2937', color: '#fff' }} />
+                                <Legend />
+                                <Line type="monotone" dataKey="Sanitation" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                                <Line type="monotone" dataKey="Health" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} />
+                                <Line type="monotone" dataKey="Engineering" stroke="#f97316" strokeWidth={3} dot={{ r: 4 }} />
+                            </LineChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
-                {/* Zone Performance Comparison */}
+                {/* Chart 2: Budget vs Expenditure */}
                 <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                        {language === 'en' ? 'Zone Performance Comparison' : 'क्षेत्र प्रदर्शन तुलना'}
-                    </h3>
-                    <div className="h-[300px]">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                            {language === 'en' ? 'Budget vs. Expenditure (₹ Cr)' : 'बजट बनाम व्यय (₹ करोड़)'}
+                        </h3>
+                        <div className="flex items-center gap-2">
+                            <span className="flex items-center text-xs text-gray-500"><span className="w-2 h-2 rounded-full bg-emerald-500 mr-1"></span>Allocated</span>
+                            <span className="flex items-center text-xs text-gray-500"><span className="w-2 h-2 rounded-full bg-red-500 mr-1"></span>Spent</span>
+                        </div>
+                    </div>
+                    <div className="h-[320px]">
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={zoneComparison.slice(0, 5)}>
+                            <BarChart data={budgetStats} barGap={4}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} opacity={0.1} />
-                                <XAxis
-                                    dataKey="zone"
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fill: '#6b7280', fontSize: 11 }}
-                                    angle={-15}
-                                    textAnchor="end"
-                                    height={60}
-                                />
-                                <YAxis
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fill: '#6b7280', fontSize: 12 }}
-                                />
+                                <XAxis dataKey="zone" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
                                 <Tooltip
+                                    cursor={{ fill: 'transparent' }}
                                     contentStyle={{ borderRadius: '12px', border: 'none', backgroundColor: '#1f2937', color: '#fff' }}
                                 />
-                                <Bar dataKey="avgScore" fill="#6F42C1" radius={[8, 8, 0, 0]} />
+                                <Bar dataKey="Allocated" fill="#10b981" radius={[4, 4, 0, 0]} name="Allocated" />
+                                <Bar dataKey="Spent" fill="#ef4444" radius={[4, 4, 0, 0]} name="Spent" />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>

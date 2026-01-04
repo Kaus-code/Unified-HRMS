@@ -63,7 +63,7 @@ const FinancialOverview = ({ language }) => {
             </div>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-2xl p-6 border border-green-200 dark:border-green-800">
                     <div className="flex items-center justify-between mb-4">
                         <div className="w-12 h-12 rounded-xl bg-green-500 flex items-center justify-center">
@@ -71,7 +71,7 @@ const FinancialOverview = ({ language }) => {
                         </div>
                     </div>
                     <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                        {language === 'en' ? 'Total Budget' : 'कुल बजट'}
+                        {language === 'en' ? 'Total Annual Budget' : 'कुल वार्षिक बजट'}
                     </p>
                     <p className="text-3xl font-bold text-gray-900 dark:text-white">
                         {formatCurrency(financial?.totalBudget || 0)}
@@ -81,21 +81,21 @@ const FinancialOverview = ({ language }) => {
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-2xl p-6 border border-blue-200 dark:border-blue-800">
                     <div className="flex items-center justify-between mb-4">
                         <div className="w-12 h-12 rounded-xl bg-blue-500 flex items-center justify-center">
-                            <Users size={24} className="text-white" />
+                            <TrendingUp size={24} className="text-white" />
                         </div>
                     </div>
                     <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                        {language === 'en' ? 'Total Payroll' : 'कुल वेतन'}
+                        {language === 'en' ? 'Total Expenditure' : 'कुल व्यय'}
                     </p>
                     <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                        {formatCurrency(financial?.totalPayroll || 0)}
+                        {formatCurrency(financial?.totalExpenditure || 0)}
                     </p>
                 </div>
 
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-2xl p-6 border border-purple-200 dark:border-purple-800">
                     <div className="flex items-center justify-between mb-4">
                         <div className="w-12 h-12 rounded-xl bg-purple-500 flex items-center justify-center">
-                            <TrendingUp size={24} className="text-white" />
+                            <PieChartIcon size={24} className="text-white" />
                         </div>
                     </div>
                     <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
@@ -113,109 +113,83 @@ const FinancialOverview = ({ language }) => {
                         </div>
                     </div>
                     <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                        {language === 'en' ? 'Pending Inventory' : 'लंबित सामग्री'}
+                        {language === 'en' ? 'Remaining Budget' : 'शेष बजट'}
                     </p>
                     <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                        {formatCurrency(financial?.pendingInventoryValue || 0)}
+                        {formatCurrency(financial?.budgetRemaining || 0)}
                     </p>
                 </div>
             </div>
 
-            {/* Charts */}
+            {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Zone-wise Payroll Distribution */}
+                {/* Sector Allocation Pie Chart */}
                 <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800">
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">
-                        {language === 'en' ? 'Payroll by Zone' : 'क्षेत्र के अनुसार वेतन'}
+                        {language === 'en' ? 'Budget Allocation by Sector' : 'क्षेत्र के अनुसार बजट आवंटन'}
                     </h3>
-                    <div className="h-[350px]">
+                    <div className="flex flex-col md:flex-row items-center justify-center h-[350px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie
-                                    data={financial?.payrollByZone || []}
-                                    dataKey="totalPayroll"
-                                    nameKey="zone"
+                                    data={financial?.sectorAllocation || []}
+                                    dataKey="allocation"
+                                    nameKey="sector"
                                     cx="50%"
                                     cy="50%"
-                                    outerRadius={120}
-                                    label={(entry) => `${entry.zone}: ${formatCurrency(entry.totalPayroll)}`}
-                                    labelLine={false}
+                                    innerRadius={60}
+                                    outerRadius={100}
+                                    paddingAngle={5}
                                 >
-                                    {financial?.payrollByZone?.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    {financial?.sectorAllocation?.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} />
                                     ))}
                                 </Pie>
                                 <Tooltip
                                     formatter={(value) => formatCurrency(value)}
                                     contentStyle={{ borderRadius: '12px', border: 'none', backgroundColor: '#1f2937', color: '#fff' }}
                                 />
+                                <Legend
+                                    layout="vertical"
+                                    verticalAlign="middle"
+                                    align="right"
+                                    wrapperStyle={{ fontSize: '12px', color: '#9ca3af' }}
+                                />
                             </PieChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
-                {/* Budget Overview */}
+                {/* Expenditure vs Budget Bar Chart */}
                 <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800">
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">
-                        {language === 'en' ? 'Budget Overview' : 'बजट अवलोकन'}
+                        {language === 'en' ? 'Expenditure vs Budget' : 'व्यय बनाम बजट'}
                     </h3>
-                    <div className="space-y-6">
-                        {/* Budget Bar */}
-                        <div>
-                            <div className="flex items-center justify-between mb-3">
-                                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                                    {language === 'en' ? 'Budget Utilization' : 'बजट उपयोग'}
-                                </span>
-                                <span className="text-sm font-bold text-purple-600 dark:text-purple-400">
-                                    {budgetUtilization.toFixed(1)}%
-                                </span>
-                            </div>
-                            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-1000"
-                                    style={{ width: `${budgetUtilization}%` }}
-                                ></div>
-                            </div>
-                        </div>
-
-                        {/* Breakdown */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
-                                <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                    {language === 'en' ? 'Total Allocated' : 'कुल आवंटित'}
-                                </p>
-                                <p className="text-xl font-bold text-gray-900 dark:text-white">
-                                    {formatCurrency(financial?.totalBudget || 0)}
-                                </p>
-                            </div>
-
-                            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
-                                <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                    {language === 'en' ? 'Utilized' : 'उपयोगित'}
-                                </p>
-                                <p className="text-xl font-bold text-gray-900 dark:text-white">
-                                    {formatCurrency(financial?.budgetUtilized || 0)}
-                                </p>
-                            </div>
-
-                            <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
-                                <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                    {language === 'en' ? 'Remaining' : 'शेष'}
-                                </p>
-                                <p className="text-xl font-bold text-gray-900 dark:text-white">
-                                    {formatCurrency(financial?.budgetRemaining || 0)}
-                                </p>
-                            </div>
-
-                            <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
-                                <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                    {language === 'en' ? 'Pending Requests' : 'लंबित अनुरोध'}
-                                </p>
-                                <p className="text-xl font-bold text-gray-900 dark:text-white">
-                                    {formatCurrency(financial?.pendingInventoryValue || 0)}
-                                </p>
-                            </div>
-                        </div>
+                    <div className="h-[350px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                                data={financial?.sectorAllocation || []}
+                                margin={{ top: 20, right: 30, left: 40, bottom: 5 }}
+                                layout="vertical"
+                            >
+                                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} horizontal={false} />
+                                <XAxis type="number" hide />
+                                <YAxis
+                                    dataKey="sector"
+                                    type="category"
+                                    width={100}
+                                    tick={{ fill: '#6b7280', fontSize: 12 }}
+                                />
+                                <Tooltip
+                                    cursor={{ fill: 'transparent' }}
+                                    formatter={(value) => formatCurrency(value)}
+                                    contentStyle={{ borderRadius: '12px', border: 'none', backgroundColor: '#1f2937', color: '#fff' }}
+                                />
+                                <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                                <Bar dataKey="allocation" name="Allocated" fill="#e5e7eb" radius={[0, 4, 4, 0]} barSize={20} />
+                                <Bar dataKey="utilized" name="Spent" fill="#8b5cf6" radius={[0, 4, 4, 0]} barSize={20} />
+                            </BarChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
             </div>
@@ -223,7 +197,7 @@ const FinancialOverview = ({ language }) => {
             {/* Zone-wise Breakdown Table */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">
-                    {language === 'en' ? 'Zone-wise Breakdown' : 'क्षेत्रवार विवरण'}
+                    {language === 'en' ? 'Zone-wise Financial Breakdown' : 'क्षेत्रवार वित्तीय विवरण'}
                 </h3>
                 <div className="overflow-x-auto">
                     <table className="w-full">
@@ -236,10 +210,13 @@ const FinancialOverview = ({ language }) => {
                                     {language === 'en' ? 'Employees' : 'कर्मचारी'}
                                 </th>
                                 <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                    {language === 'en' ? 'Monthly Payroll' : 'मासिक वेतन'}
+                                    {language === 'en' ? 'Payroll Cost' : 'वेतन लागत'}
                                 </th>
                                 <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                    {language === 'en' ? 'Avg Salary' : 'औसत वेतन'}
+                                    {language === 'en' ? 'Ops Cost (Est.)' : 'परिचालन लागत'}
+                                </th>
+                                <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                    {language === 'en' ? 'Total Expense' : 'कुल व्यय'}
                                 </th>
                             </tr>
                         </thead>
@@ -252,11 +229,14 @@ const FinancialOverview = ({ language }) => {
                                     <td className="py-3 px-4 text-right text-gray-600 dark:text-gray-400">
                                         {zone.employeeCount}
                                     </td>
-                                    <td className="py-3 px-4 text-right font-semibold text-gray-900 dark:text-white">
+                                    <td className="py-3 px-4 text-right font-medium text-gray-900 dark:text-white">
                                         {formatCurrency(zone.totalPayroll)}
                                     </td>
                                     <td className="py-3 px-4 text-right text-gray-600 dark:text-gray-400">
-                                        {formatCurrency(zone.totalPayroll / zone.employeeCount)}
+                                        {formatCurrency(zone.totalPayroll * 1.5)} {/* Estimated Ops Cost */}
+                                    </td>
+                                    <td className="py-3 px-4 text-right font-semibold text-purple-600 dark:text-purple-400">
+                                        {formatCurrency(zone.totalPayroll * 2.5)}
                                     </td>
                                 </tr>
                             ))}
