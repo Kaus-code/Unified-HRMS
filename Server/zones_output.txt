@@ -1,0 +1,15 @@
+[
+  "Central Zone",
+  "City S.P. Zone",
+  "Civil Line",
+  "Karolbagh",
+  "Keshavpuram",
+  "Najafgarh Zone",
+  "Narela",
+  "Rohini",
+  "Sh South Zone",
+  "Shahdara North",
+  "Shahdara South",
+  "South Zone",
+  "West Zone"
+]

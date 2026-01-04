@@ -55,7 +55,7 @@ const EmployeeVerification = () => {
             }
         } catch (err) {
             console.error('Verification error:', err);
-            setError('System error. Please try again.');
+            setError('Invalid Employee ID. Please try again.');
             setIsLoading(false);
         }
     };

@@ -1,5 +1,6 @@
 const Recruitment = require('../models/Recruitment');
 const Candidate = require('../models/Candidate');
+const Ward = require('../models/Ward');
 
 // Dummy Data Configuration
 const DUMMY_EXAMS = [
@@ -13,28 +14,42 @@ const DUMMY_CANDIDATES = [
     {
         fullName: "Rahul Sharma",
         phone: "9876543210",
-        email: "rahul.sharma@example.com",
+        email: "rahul.sharma.new@example.com",
         enrollmentNumber: "EN12345",
         dob: "2000-05-15",
-        examId: "EX-01"
+        examId: "EX-01",
+        verificationStatus: 'Submitted'
     },
     {
         fullName: "Priya Singh",
         phone: "9876543211",
-        email: "priya.singh@example.com",
+        email: "priya.singh.new@example.com",
         enrollmentNumber: "EN67890",
         dob: "1999-08-20",
-        examId: "EX-04"
+        examId: "EX-04",
+        verificationStatus: 'Submitted'
     },
-    // User Requested Dummy Data - PERMANENTLY ADDED
     {
         fullName: "Amritesh Kumar Rai",
         phone: "9876543212",
-        email: "amriteshkumarrai14@gmail.com",
+        email: "amriteshkumarrai14.new@gmail.com",
         enrollmentNumber: "EN99999",
-        dob: "2006-10-30", // YYYY-MM-DD
-        examId: "EX-04"
-    }
+        dob: "2006-10-30",
+        examId: "EX-04",
+        verificationStatus: 'Submitted'
+    },
+    { fullName: "Amit Verma", phone: "9871112222", email: "amit.verma.new@example.com", enrollmentNumber: "EN10001", dob: "1998-01-10", examId: "EX-01", verificationStatus: 'Submitted' },
+    { fullName: "Sita Gupta", phone: "9871112233", email: "sita.gupta.new@example.com", enrollmentNumber: "EN10002", dob: "1997-07-22", examId: "EX-02", verificationStatus: 'Submitted' },
+    { fullName: "Vikram Malhotra", phone: "9871112244", email: "vikram.m.new@example.com", enrollmentNumber: "EN10003", dob: "1995-12-05", examId: "EX-03", verificationStatus: 'Submitted' },
+    { fullName: "Anjali Das", phone: "9871112255", email: "anjali.das.new@example.com", enrollmentNumber: "EN10004", dob: "2001-03-30", examId: "EX-04", verificationStatus: 'Submitted' },
+    { fullName: "Rohan Mehra", phone: "9871112266", email: "rohan.mehra.new@example.com", enrollmentNumber: "EN10005", dob: "2000-11-12", examId: "EX-01", verificationStatus: 'Submitted' },
+    { fullName: "Kavita Reddy", phone: "9871112277", email: "kavita.reddy.new@example.com", enrollmentNumber: "EN10006", dob: "1999-09-09", examId: "EX-02", verificationStatus: 'Submitted' },
+    { fullName: "Arjun Rampal", phone: "9871112288", email: "arjun.r.new@example.com", enrollmentNumber: "EN10007", dob: "1996-06-18", examId: "EX-03", verificationStatus: 'Submitted' },
+    { fullName: "Neha Kakkar", phone: "9871112299", email: "neha.k.new@example.com", enrollmentNumber: "EN10008", dob: "1998-04-25", examId: "EX-04", verificationStatus: 'Submitted' },
+    { fullName: "Suresh Raina", phone: "9871112300", email: "suresh.r.new@example.com", enrollmentNumber: "EN10009", dob: "1995-02-14", examId: "EX-01", verificationStatus: 'Submitted' },
+    { fullName: "Deepika P", phone: "9871112311", email: "deepika.p.new@example.com", enrollmentNumber: "EN10010", dob: "1997-12-31", examId: "EX-02", verificationStatus: 'Submitted' },
+    { fullName: "Ranbir K", phone: "9871112322", email: "ranbir.k.new@example.com", enrollmentNumber: "EN10011", dob: "2000-01-01", examId: "EX-03", verificationStatus: 'Submitted' },
+    { fullName: "Alia B", phone: "9871112333", email: "alia.b.new@example.com", enrollmentNumber: "EN10012", dob: "2001-08-15", examId: "EX-04", verificationStatus: 'Submitted' }
 ];
 
 // Reusable Seed Function
@@ -112,7 +127,12 @@ exports.checkCandidateStatus = async (req, res) => {
                 examId: candidate.examId,
                 verificationStatus: candidate.verificationStatus,
                 reportCard: candidate.reportCard,
-                documentDriveLink: candidate.documentDriveLink
+                documentDriveLink: candidate.documentDriveLink,
+                // Return allocation details if approved
+                allocatedWard: candidate.allocatedWard,
+                allocatedZone: candidate.allocatedZone,
+                generatedEmployeeId: candidate.generatedEmployeeId,
+                rejectionReason: candidate.rejectionReason
             }
         });
 
@@ -193,21 +213,20 @@ exports.rejectCandidate = async (req, res) => {
     }
 };
 
-exports.getZoneCandidates = async (req, res) => {
+exports.getPendingCandidates = async (req, res) => {
     try {
-        const { zone } = req.params;
-        // Fetch candidates who have passed the exam (can filter by examId if needed) or just have status 'Submitted'
-        // Ideally, we should have a Zone preference in Candidate model or map Exam -> Zone. 
-        // For now, assuming DC sees ALL submitted candidates to assign them manually or auto-assign to their zone.
-        // Or better: We fetch all 'Submitted' candidates.
-
+        // Fetch ALL candidates with status 'Submitted' regardless of zone
+        // This enables the "First Come First Serve" global pool for all DCs
         const candidates = await Candidate.find({ verificationStatus: 'Submitted' }).sort({ createdAt: -1 });
         res.status(200).json({ success: true, candidates });
     } catch (error) {
-        console.error("Fetch Zone Candidates Error:", error);
+        console.error("Fetch Pending Candidates Error:", error);
         res.status(500).json({ success: false, message: "Server Error" });
     }
 };
+
+// Deprecated: Kept for backward compatibility if needed, but redirects to global pool
+exports.getZoneCandidates = exports.getPendingCandidates;
 
 exports.approveCandidate = async (req, res) => {
     try {
@@ -220,41 +239,28 @@ exports.approveCandidate = async (req, res) => {
             return res.status(400).json({ success: false, message: "Candidate already approved" });
         }
 
-        // 1. Load Balancing: Find Ward with minimum employees in the given Zone
-        // Hack: We look for users in Wards 1 to 100 (example) filtering by Zone if User schema had Zone properly populated.
-        // Since Ward is Number, let's assume Wards 1-10 belong to Rohini Zone, etc.
-        // For dynamic load balancing, we query existing Users.
+        // 1. Assign Ward: Randomly select ANY valid ward from the database
+        let targetWard = '1';
+        let targetZone = zone; // Default to DC's zone, but will be overwritten by the random ward's zone
 
-        // Find all users in this zone matching the role 'Worker' (or generic staff)
-        const existingStaff = await User.find({ Zone: zone, role: 'Worker' });
+        try {
+            // true global random assignment as requested
+            const count = await Ward.countDocuments();
+            if (count > 0) {
+                const random = Math.floor(Math.random() * count);
+                const randomWard = await Ward.findOne().skip(random);
 
-        // Group by Ward
-        const wardCounts = {};
-        // Initialize some wards for the zone (e.g., 1-5) to ensure they exist in map
-        // In a real app, we'd fetch Wards from a Zone model.
-        // Fallback: If no staff exists, assign to Ward 1.
-
-        existingStaff.forEach(u => {
-            wardCounts[u.Ward] = (wardCounts[u.Ward] || 0) + 1;
-        });
-
-        // Find key with minimum value. 
-        // If map is empty, default to Ward 1.
-        let targetWard = 1;
-        if (existingStaff.length > 0) {
-            // Simple logic: pick ward with min count from observed wards
-            // This assumes we only balance between wards that already have at least one employee or just pick one.
-            // Let's improve: Pick from a predefined set of Wards for the Zone (Simulated)
-            const zoneWards = [1, 2, 3, 4, 5]; // Simulating Rohini Zone Wards
-
-            let minCount = Infinity;
-            zoneWards.forEach(w => {
-                const count = wardCounts[w] || 0;
-                if (count < minCount) {
-                    minCount = count;
-                    targetWard = w;
+                if (randomWard) {
+                    targetWard = randomWard.wardNumber;
+                    targetZone = randomWard.zoneName; // User takes the zone of the assigned ward
+                    console.log(`[Approve] Global Random Assignment: Ward ${targetWard} (${targetZone})`);
                 }
-            });
+            } else {
+                console.warn("[Approve] No wards in DB. Defaulting to Ward 1.");
+            }
+
+        } catch (wardError) {
+            console.error("Error fetching random ward:", wardError);
         }
 
         // 2. Generate Employee ID
@@ -269,7 +275,7 @@ exports.approveCandidate = async (req, res) => {
             email: candidate.email,
             role: 'Worker', // Defaulting to Worker for now
             department: 'Sanitation', // Default
-            Zone: zone,
+            Zone: targetZone, // Use the zone corresponding to the allocated ward
             Ward: targetWard,
             employmentStatus: 'Permanent'
         });
@@ -278,10 +284,12 @@ exports.approveCandidate = async (req, res) => {
 
         // 4. Update Candidate Status
         candidate.verificationStatus = 'Approved';
-        candidate.aiVerificationData.isVerified = true; // Mark as verified
-        // We might want to store the generated ID on the candidate to show them later
-        // Using 'reportCard' field temporarily or adding a new field 'generatedEmployeeId' in schema would be better.
-        // But schema update might be needed. For now, let's send it back in response.
+        candidate.aiVerificationData.isVerified = true;
+
+        // Save allocation details for the portal
+        candidate.allocatedWard = targetWard;
+        candidate.allocatedZone = targetZone;
+        candidate.generatedEmployeeId = employeeId;
 
         await candidate.save();
 

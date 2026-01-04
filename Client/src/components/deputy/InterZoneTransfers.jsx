@@ -1,298 +1,250 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRightLeft, MapPin, Search, CheckCircle, XCircle, Clock, Plus, X, Loader } from 'lucide-react';
+import { ArrowRightLeft, MapPin, Search, CheckCircle, User, Briefcase, Calendar, Loader } from 'lucide-react';
 
 const InterZoneTransfers = ({ language = 'en', userZone }) => {
+    // Search State
     const [searchTerm, setSearchTerm] = useState('');
-    const [transfers, setTransfers] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [showModal, setShowModal] = useState(false);
-    const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [employee, setEmployee] = useState(null);
+    const [searchError, setSearchError] = useState('');
 
-    // Form state
-    const [formData, setFormData] = useState({
-        employeeId: '',
-        targetZone: '',
-        targetWard: '',
-        reason: ''
-    });
-    const [submitting, setSubmitting] = useState(false);
-    const [statusMessage, setStatusMessage] = useState({ type: '', text: '' });
+    // Transfer State
+    const [wards, setWards] = useState([]);
+    const [selectedWard, setSelectedWard] = useState('');
+    const [reason, setReason] = useState('');
+    const [transferring, setTransferring] = useState(false);
 
+    // Load Wards on Mount
     useEffect(() => {
-        if (!userZone) return;
-        fetchTransfers();
-    }, [userZone, refreshTrigger]);
+        if (userZone) {
+            fetchWards();
+        }
+    }, [userZone]);
 
-    const fetchTransfers = async () => {
-        setLoading(true);
+    const fetchWards = async () => {
         try {
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URI}/deputy/transfers/${userZone}`);
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URI}/deputy/wards/${userZone}`);
             const data = await response.json();
             if (data.success) {
-                setTransfers(data.transfers);
+                setWards(data.wards);
             }
         } catch (error) {
-            console.error("Error fetching transfers:", error);
+            console.error("Error fetching wards:", error);
+        }
+    };
+
+    const handleSearch = async (e) => {
+        e.preventDefault();
+        if (!searchTerm.trim()) return;
+
+        setLoading(true);
+        setEmployee(null);
+        setSearchError('');
+
+        try {
+            // Reusing the search logic but we need EXACT match for transfer safety usually, 
+            // but the route supports partial. Let's use the same robust search route.
+            // We want to find ONE specific person to transfer.
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URI}/deputy/employees/${userZone}?search=${searchTerm}`);
+            const data = await response.json();
+
+            if (data.success && data.employees.length > 0) {
+                // Suggest the first match or strict match? 
+                // For now, if multiple, take first, but ideally we show list. 
+                // Simplification: strict match ID preference if listed.
+                const exactMatch = data.employees.find(e => e.employeeId.toLowerCase() === searchTerm.toLowerCase());
+                setEmployee(exactMatch || data.employees[0]);
+            } else {
+                setSearchError(language === 'en' ? 'No employee found.' : 'कोई कर्मचारी नहीं मिला।');
+            }
+        } catch (error) {
+            setSearchError('Network Error');
         } finally {
             setLoading(false);
         }
     };
 
-    const handleCreateTransfer = async (e) => {
+    const handleTransfer = async (e) => {
         e.preventDefault();
-        setSubmitting(true);
-        setStatusMessage({ type: '', text: '' });
+        if (!employee || !selectedWard) return;
 
-        try {
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URI}/deputy/transfer`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...formData,
-                    requestedBy: userZone // In a real app this would be ID, but using Zone for context
-                })
-            });
-            const data = await response.json();
-
-            if (data.success) {
-                setStatusMessage({ type: 'success', text: 'Transfer request created successfully!' });
-                setFormData({ employeeId: '', targetZone: '', targetWard: '', reason: '' });
-                setTimeout(() => {
-                    setShowModal(false);
-                    setRefreshTrigger(prev => prev + 1);
-                    setStatusMessage({ type: '', text: '' });
-                }, 1500);
-            } else {
-                setStatusMessage({ type: 'error', text: data.message || 'Failed to create request' });
-            }
-        } catch (error) {
-            setStatusMessage({ type: 'error', text: 'Network error occurred' });
-        } finally {
-            setSubmitting(false);
+        if (!confirm(language === 'en'
+            ? `Are you sure you want to transfer ${employee.name} to Ward ${selectedWard}?`
+            : `क्या आप सुनिश्चित हैं कि आप ${employee.name} को वार्ड ${selectedWard} में स्थानांतरित करना चाहते हैं?`)) {
+            return;
         }
-    };
 
-    const handleUpdateStatus = async (id, status) => {
-        if (!confirm(`Are you sure you want to ${status} this request?`)) return;
-
+        setTransferring(true);
         try {
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URI}/deputy/transfer/${id}`, {
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URI}/deputy/reassign`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status })
+                body: JSON.stringify({
+                    employeeId: employee.employeeId,
+                    targetWard: selectedWard,
+                    targetZone: userZone,
+                    reason: reason || 'Administrative Transfer'
+                })
             });
+
             const data = await response.json();
             if (data.success) {
-                setRefreshTrigger(prev => prev + 1);
+                alert(language === 'en' ? 'Transfer Successful!' : 'स्थानांतरण सफल रहा!');
+                // Reset
+                setEmployee(null);
+                setSearchTerm('');
+                setSelectedWard('');
+                setReason('');
             } else {
                 alert(data.message);
             }
         } catch (error) {
-            console.error("Error updating transfer:", error);
+            console.error('Transfer failed:', error);
+            alert('Transfer failed');
+        } finally {
+            setTransferring(false);
         }
     };
-
-    const getStatusColor = (status) => {
-        switch (status) {
-            case 'Approved': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
-            case 'Denied': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
-            default: return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
-        }
-    };
-
-    const filteredTransfers = transfers.filter(tr =>
-        tr.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        tr.employeeId.toLowerCase().includes(searchTerm.toLowerCase())
-    );
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
-                        {language === 'en' ? 'Inter-Zone Transfers' : 'अंतर-क्षेत्र स्थानांतरण'}
-                    </h2>
-                    <p className="text-gray-500 dark:text-gray-400">
-                        {language === 'en' ? 'Manage and approve employee movement across different wards' : 'विभिन्न वार्ड में कर्मचारी आवाजाही को प्रबंधित और अनुमोदित करें'}
-                    </p>
-                </div>
-                <button
-                    onClick={() => setShowModal(true)}
-                    className="px-6 py-2.5 bg-[#6F42C1] hover:bg-[#5a35a0] text-white font-semibold rounded-xl transition-all shadow-lg shadow-purple-500/25 flex items-center gap-2 cursor-pointer"
-                >
-                    <Plus size={18} />
-                    {language === 'en' ? 'New Transfer Request' : 'नया स्थानांतरण अनुरोध'}
-                </button>
+        <div className="space-y-8 min-h-[600px]">
+            {/* Header */}
+            <div>
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+                    {language === 'en' ? 'Intra-Zone Transfer Console' : 'आंतरिक क्षेत्र स्थानांतरण'}
+                </h2>
+                <p className="text-gray-500 dark:text-gray-400">
+                    {language === 'en' ? 'Reassign employees to different wards within your zone.' : 'कर्मचारियों को अपने क्षेत्र के भीतर विभिन्न वार्डों में पुन: असाइन करें।'}
+                </p>
             </div>
 
-            {/* Modal */}
-            {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
-                        <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900/50">
-                            <h3 className="font-bold text-lg text-gray-900 dark:text-white">
-                                {language === 'en' ? 'New Transfer Request' : 'नया स्थानांतरण अनुरोध'}
-                            </h3>
-                            <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
-                                <X size={20} />
-                            </button>
+            {/* Step 1: Search */}
+            <div className="bg-white dark:bg-gray-900 p-8 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm max-w-3xl mx-auto">
+                <div className="text-center mb-8">
+                    <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-purple-600">
+                        <ArrowRightLeft size={32} />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                        {language === 'en' ? 'Find Employee' : 'कर्मचारी खोजें'}
+                    </h3>
+                </div>
+
+                <form onSubmit={handleSearch} className="relative max-w-xl mx-auto">
+                    <div className="relative">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                        <input
+                            type="text"
+                            placeholder="Enter Employee ID..."
+                            className="w-full pl-12 pr-4 py-4 rounded-xl bg-gray-50 dark:bg-gray-800 border-2 border-transparent focus:border-purple-500 focus:bg-white dark:focus:bg-gray-900 transition-all outline-none text-lg"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="absolute right-2 top-2 bottom-2 px-6 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50"
+                        >
+                            {loading ? '...' : (language === 'en' ? 'Find' : 'खोजें')}
+                        </button>
+                    </div>
+                    {searchError && <p className="text-red-500 text-center mt-3 animate-pulse">{searchError}</p>}
+                </form>
+            </div>
+
+            {/* Step 2: Transfer Form (Visible if Employee Found) */}
+            {employee && (
+                <div className="max-w-4xl mx-auto animate-in slide-in-from-bottom-8 duration-500">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {/* Employee Card */}
+                        <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 border border-gray-200 dark:border-gray-800 relative overflow-hidden group">
+                            <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-br from-purple-600 to-indigo-600"></div>
+                            <div className="relative mt-8 flex flex-col items-center text-center">
+                                <div className="w-24 h-24 rounded-full border-4 border-white dark:border-gray-900 bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-3xl font-bold text-gray-400 shadow-xl mb-4">
+                                    {employee.name.charAt(0)}
+                                </div>
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">{employee.name}</h3>
+                                <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-xs font-semibold mt-2">
+                                    {employee.role}
+                                </span>
+
+                                <div className="w-full mt-6 space-y-3">
+                                    <div className="flex justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                                        <span className="text-gray-500 text-sm">Employee ID</span>
+                                        <span className="font-mono font-medium text-gray-900 dark:text-white">{employee.employeeId}</span>
+                                    </div>
+                                    <div className="flex justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                                        <span className="text-gray-500 text-sm">Current Ward</span>
+                                        <div className="flex items-center gap-2">
+                                            <MapPin size={16} className="text-red-500" />
+                                            <span className="font-medium text-gray-900 dark:text-white">Ward {employee.Ward}</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                                        <span className="text-gray-500 text-sm">Since</span>
+                                        <div className="flex items-center gap-2">
+                                            <Calendar size={16} className="text-blue-500" />
+                                            <span className="font-medium text-gray-900 dark:text-white">{new Date(employee.joiningDate).getFullYear()}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <form onSubmit={handleCreateTransfer} className="p-6 space-y-4">
-                            {statusMessage.text && (
-                                <div className={`p-3 rounded-lg text-sm ${statusMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
-                                    {statusMessage.text}
-                                </div>
-                            )}
+                        {/* Action Module */}
+                        <div className="bg-white dark:bg-gray-900 rounded-3xl p-8 border border-gray-200 dark:border-gray-800 flex flex-col justify-center">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                                <ArrowRightLeft className="text-green-500" />
+                                {language === 'en' ? 'Select New Assignment' : 'नई नियुक्ति चुनें'}
+                            </h3>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Employee ID</label>
-                                <input
-                                    type="text"
-                                    required
-                                    placeholder="e.g. EMP12345"
-                                    className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none dark:text-white"
-                                    value={formData.employeeId}
-                                    onChange={e => setFormData({ ...formData, employeeId: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
+                            <form onSubmit={handleTransfer} className="space-y-6">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Target Zone</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        placeholder="e.g. Rohini Zone"
-                                        className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none dark:text-white"
-                                        value={formData.targetZone}
-                                        onChange={e => setFormData({ ...formData, targetZone: e.target.value })}
-                                    />
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        {language === 'en' ? 'Target Ward' : 'लक्ष्य वार्ड'}
+                                    </label>
+                                    <div className="relative">
+                                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                                        <select
+                                            required
+                                            value={selectedWard}
+                                            onChange={(e) => setSelectedWard(e.target.value)}
+                                            className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-purple-500 outline-none appearance-none cursor-pointer"
+                                        >
+                                            <option value="">Select a Ward...</option>
+                                            {wards.map(w => (
+                                                <option key={w.wardNumber} value={w.wardNumber}>
+                                                    Ward {w.wardNumber} - {w.wardName}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
                                 </div>
+
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Target Ward</label>
-                                    <input
-                                        type="number"
-                                        required
-                                        placeholder="e.g. 5"
-                                        className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none dark:text-white"
-                                        value={formData.targetWard}
-                                        onChange={e => setFormData({ ...formData, targetWard: e.target.value })}
-                                    />
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        {language === 'en' ? 'Transfer Reason' : 'स्थानांतरण का कारण'}
+                                    </label>
+                                    <textarea
+                                        rows="2"
+                                        placeholder="Reason for reassignment..."
+                                        className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-purple-500 outline-none resize-none"
+                                        value={reason}
+                                        onChange={(e) => setReason(e.target.value)}
+                                    ></textarea>
                                 </div>
-                            </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reason</label>
-                                <textarea
-                                    required
-                                    rows="3"
-                                    className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none dark:text-white"
-                                    value={formData.reason}
-                                    onChange={e => setFormData({ ...formData, reason: e.target.value })}
-                                ></textarea>
-                            </div>
-
-                            <div className="pt-2">
                                 <button
                                     type="submit"
-                                    disabled={submitting}
-                                    className="w-full py-2.5 bg-[#6F42C1] hover:bg-[#5a35a0] text-white font-bold rounded-xl transition-all disabled:opacity-70 flex justify-center items-center gap-2"
+                                    disabled={transferring || !selectedWard}
+                                    className="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100 shadow-xl"
                                 >
-                                    {submitting && <Loader size={16} className="animate-spin" />}
-                                    {language === 'en' ? 'Submit Request' : 'अनुरोध भेजें'}
+                                    {transferring ? 'Processing...' : (language === 'en' ? 'Confirm Transfer' : 'स्थानांतरण की पुष्टि करें')}
                                 </button>
-                            </div>
-                        </form>
+                            </form>
+                        </div>
                     </div>
                 </div>
             )}
-
-            {/* Transfer List */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead className="bg-gray-50 dark:bg-gray-950 border-b border-gray-100 dark:border-gray-700">
-                            <tr>
-                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">{language === 'en' ? 'Employee' : 'कर्मचारी'}</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">{language === 'en' ? 'From → To' : 'कहाँ से → कहाँ तक'}</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">{language === 'en' ? 'Reason' : 'कारण'}</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">{language === 'en' ? 'Status' : 'स्थिति'}</th>
-                                <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">{language === 'en' ? 'Action' : 'कार्रवाई'}</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                            {loading ? (
-                                <tr>
-                                    <td colSpan="5" className="text-center py-10 text-gray-500">
-                                        <div className="flex justify-center items-center gap-2">
-                                            <Loader className="animate-spin" size={20} /> Loading...
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : filteredTransfers.length === 0 ? (
-                                <tr>
-                                    <td colSpan="5" className="text-center py-10 text-gray-500">No transfer requests found.</td>
-                                </tr>
-                            ) : (
-                                filteredTransfers.map((tr) => (
-                                    <tr key={tr._id} className="hover:bg-gray-50 dark:hover:bg-gray-750/50 transition-colors">
-                                        <td className="px-6 py-4">
-                                            <div className="font-medium text-gray-900 dark:text-white">{tr.employeeName}</div>
-                                            <div className="text-xs text-gray-500">{tr.employeeId}</div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <div className="text-xs">
-                                                    <div className="text-gray-500">From</div>
-                                                    <div className="font-semibold text-gray-700 dark:text-gray-300">{tr.currentZone} (Ward {tr.currentWard})</div>
-                                                </div>
-                                                <ArrowRightLeft size={14} className="text-purple-400 mx-1" />
-                                                <div className="text-xs">
-                                                    <div className="text-gray-500">To</div>
-                                                    <div className="font-semibold text-purple-700 dark:text-purple-300">{tr.targetZone} (Ward {tr.targetWard})</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300 max-w-[200px] truncate" title={tr.reason}>
-                                            {tr.reason}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(tr.status)}`}>
-                                                {tr.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            {tr.status === 'Pending' ? (
-                                                <div className="flex justify-end gap-2">
-                                                    <button
-                                                        onClick={() => handleUpdateStatus(tr._id, 'Approved')}
-                                                        className="p-2 bg-green-500/10 text-green-600 hover:bg-green-500 hover:text-white rounded-lg transition-all"
-                                                        title="Approve"
-                                                    >
-                                                        <CheckCircle size={18} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleUpdateStatus(tr._id, 'Denied')}
-                                                        className="p-2 bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white rounded-lg transition-all"
-                                                        title="Deny"
-                                                    >
-                                                        <XCircle size={18} />
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <span className="text-xs text-gray-400 italic">
-                                                    {language === 'en' ? 'Resolved on' : 'निपटाया गया'} {tr.resolvedAt ? new Date(tr.resolvedAt).toLocaleDateString() : 'N/A'}
-                                                </span>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
         </div>
     );
 };

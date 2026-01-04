@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, TrendingUp, TrendingDown, Minus, MapPin, AlertCircle, Info } from 'lucide-react';
-import { wardData, getWardColor, getWardPerformance } from '../../data/wardData';
+import { wardData, getWardColor } from '../../data/wardData';
 import { getTrendDisplay } from '../../data/zoneData';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
@@ -9,14 +9,46 @@ import {
 const WardProgressMap = ({ language = 'en', userZone = 'Rohini Zone' }) => {
     const [selectedWard, setSelectedWard] = useState(null);
     const [filteredWards, setFilteredWards] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Filter wards based on DC's zone
-        const zoneWards = wardData.filter(ward => ward.zone === userZone).map(ward => ({
-            ...ward,
-            ...getWardPerformance(ward.id)
-        }));
-        setFilteredWards(zoneWards);
+        // Don't fetch if userZone is null
+        if (!userZone) return;
+
+        // Fetch wards from database based on DC's zone
+        const fetchWards = async () => {
+            setLoading(true);
+            try {
+                const response = await fetch(`${import.meta.env.VITE_BACKEND_URI}/deputy/wards/${userZone}`);
+                const data = await response.json();
+                if (data.success) {
+                    const wardsWithPerformance = data.wards.map(ward => ({
+                        id: parseInt(ward.wardNumber),
+                        name: ward.wardName,
+                        zone: ward.zoneName,
+                        lat: ward.latitude,
+                        lng: ward.longitude,
+                        id: parseInt(ward.wardNumber),
+                        name: ward.wardName,
+                        zone: ward.zoneName,
+                        lat: ward.latitude,
+                        lng: ward.longitude,
+                        // Data from Real API
+                        score: ward.score,
+                        sanitation: ward.sanitation,
+                        resolved: ward.resolved,
+                        pending: ward.pending,
+                        trend: ward.trend
+                    }));
+                    setFilteredWards(wardsWithPerformance);
+                }
+            } catch (error) {
+                console.error('Error fetching wards:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchWards();
     }, [userZone]);
 
     const handleBarClick = (data) => {

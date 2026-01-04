@@ -12,8 +12,9 @@ import {
   BarChart, Bar, Legend
 } from 'recharts';
 
+import DCWardInspection from '../components/deputy/DCWardInspection';
 import WardProgressMap from '../components/deputy/WardProgressMap';
-import DisciplinaryAction from '../components/deputy/DisciplinaryAction';
+import DCDisciplinary from '../components/deputy/DCDisciplinary';
 import InterZoneTransfers from '../components/deputy/InterZoneTransfers';
 import ZoneGrievance from '../components/deputy/ZoneGrievance';
 import DCInspectors from '../components/deputy/DCInspectors';
@@ -22,23 +23,83 @@ import DCRecruitment from '../components/deputy/DCRecruitment';
 const DeputyCommissionerDashboard = () => {
   const { language } = useLanguage();
   const { signOut } = useClerk();
+  const navigate = useNavigate();
   const [activeMenu, setActiveMenu] = useState('Overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const dcZone = 'Rohini Zone'; // Default or fetched from user context
+  const [dcZone, setDcZone] = useState(null); // Don't set default, wait for sessionStorage
+  const [userData, setUserData] = useState(null);
+
+  // Zone Statistics State
+  const [zoneStats, setZoneStats] = useState({
+    totalWards: 0,
+    activeStaff: 0,
+    pendingApprovals: 0,
+    zonePerformance: 0
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [performanceData, setPerformanceData] = useState([]);
+  const [loadingGraph, setLoadingGraph] = useState(true);
+
+  // Security Check & Data Loading
+  useEffect(() => {
+    const storedData = sessionStorage.getItem('verifiedUser');
+    if (!storedData) {
+      navigate('/verify-employee');
+    } else {
+      try {
+        const parsedUser = JSON.parse(storedData);
+        if (parsedUser.role !== 'Deputy Commissioner') {
+          console.warn("Unauthorized access: Role mismatch");
+          navigate('/verify-employee');
+          return;
+        }
+        setUserData(parsedUser);
+        if (parsedUser.Zone) {
+          const normalizedZone = parsedUser.Zone.includes('Zone') ? parsedUser.Zone : `${parsedUser.Zone} Zone`;
+          setDcZone(normalizedZone);
+        }
+      } catch (e) {
+        navigate('/verify-employee');
+      }
+    }
+  }, [navigate]);
+
+  // Fetch Zone Statistics & Trends
+  useEffect(() => {
+    const fetchZoneStats = async () => {
+      if (!dcZone) return;
+      console.log("🔍 Fetching stats for zone:", dcZone);
+      setLoadingStats(true);
+      setLoadingGraph(true);
+      try {
+        // Fetch Key Stats
+        const statsResponse = await fetch(`${import.meta.env.VITE_BACKEND_URI}/analytics/zone-stats/${dcZone}`);
+        const statsData = await statsResponse.json();
+        console.log("📊 Received stats:", statsData);
+        if (statsData.success) {
+          setZoneStats(statsData.stats);
+        }
+
+        // Fetch Trends Graph
+        const trendsResponse = await fetch(`${import.meta.env.VITE_BACKEND_URI}/analytics/zone-trends/${dcZone}`);
+        const trendsData = await trendsResponse.json();
+        console.log("📈 Received trends:", trendsData);
+        if (trendsData.success) {
+          setPerformanceData(trendsData.trends);
+        }
+      } catch (error) {
+        console.error("Error fetching zone stats/trends:", error);
+      } finally {
+        setLoadingStats(false);
+        setLoadingGraph(false);
+      }
+    };
+    fetchZoneStats();
+  }, [dcZone]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
-
-  // Mock Data for Graph
-  const performanceData = [
-    { name: 'Jan', compliance: 85, grievances: 12, recruitment: 5 },
-    { name: 'Feb', compliance: 88, grievances: 10, recruitment: 8 },
-    { name: 'Mar', compliance: 82, grievances: 15, recruitment: 4 },
-    { name: 'Apr', compliance: 90, grievances: 8, recruitment: 6 },
-    { name: 'May', compliance: 94, grievances: 5, recruitment: 7 },
-    { name: 'Jun', compliance: 91, grievances: 7, recruitment: 9 },
-  ];
 
   const menuItems = [
     { icon: LayoutDashboard, label: language === 'en' ? 'Overview' : 'अवलोकन', id: 'Overview' },
@@ -58,21 +119,21 @@ const DeputyCommissionerDashboard = () => {
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
-                { label: language === 'en' ? 'Total Wards' : 'कुल वार्ड', value: '12', icon: MapPin, color: '#3b82f6', gradient: 'from-blue-500 to-cyan-500' },
-                { label: language === 'en' ? 'Active Staff' : 'सक्रिय कर्मचारी', value: '248', icon: Users, color: '#8b5cf6', gradient: 'from-purple-500 to-pink-500' },
-                { label: language === 'en' ? 'Pending Approvals' : 'लंबित अनुमोदन', value: '15', icon: ShieldAlert, color: '#f59e0b', gradient: 'from-amber-500 to-orange-500' },
-                { label: language === 'en' ? 'Zone Performance' : 'क्षेत्र प्रदर्शन', value: '87%', icon: LayoutDashboard, color: '#10b981', gradient: 'from-emerald-500 to-green-500' },
+                { label: language === 'en' ? 'Total Wards' : 'कुल वार्ड', value: loadingStats ? '...' : zoneStats.totalWards, icon: MapPin, color: '#3b82f6', gradient: 'from-blue-500 to-cyan-500' },
+                { label: language === 'en' ? 'Active Staff' : 'सक्रिय कर्मचारी', value: loadingStats ? '...' : zoneStats.activeStaff, icon: Users, color: '#8b5cf6', gradient: 'from-purple-500 to-pink-500' },
+                { label: language === 'en' ? 'Pending Approvals' : 'लंबित अनुमोदन', value: loadingStats ? '...' : zoneStats.pendingApprovals, icon: ShieldAlert, color: '#f59e0b', gradient: 'from-amber-500 to-orange-500' },
+                { label: language === 'en' ? 'Zone Performance' : 'क्षेत्र प्रदर्शन', value: loadingStats ? '...' : `${zoneStats.zonePerformance}%`, icon: LayoutDashboard, color: '#10b981', gradient: 'from-emerald-500 to-green-500' },
               ].map((stat, index) => (
-                <div key={index} className="group relative overflow-hidden bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 hover:shadow-xl transition-all duration-300">
-                  <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}></div>
+                <div key={index} className="group relative overflow-hidden bg-white/60 dark:bg-gray-900/60 backdrop-blur-lg rounded-2xl border border-gray-200/50 dark:border-gray-700/50 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+                  <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}></div>
                   <div className="relative p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400 capitalize">{stat.label}</p>
-                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{stat.value}</h3>
+                        <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">{stat.label}</p>
+                        <h3 className="text-4xl font-extrabold text-gray-900 dark:text-white mt-2 tabular-nums">{stat.value}</h3>
                       </div>
-                      <div className="w-12 h-12 rounded-xl flex items-center justify-center p-2.5 shadow-sm" style={{ backgroundColor: `${stat.color}15` }}>
-                        <stat.icon size={24} style={{ color: stat.color }} />
+                      <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                        <stat.icon size={26} className="text-white" />
                       </div>
                     </div>
                   </div>
@@ -142,56 +203,62 @@ const DeputyCommissionerDashboard = () => {
                 </div>
 
                 <div className="h-[350px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={performanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="colorCompliance" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                        </linearGradient>
-                        <linearGradient id="colorGrievances" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} opacity={0.1} />
-                      <XAxis
-                        dataKey="name"
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: '#6b7280', fontSize: 12 }}
-                        dy={10}
-                      />
-                      <YAxis
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: '#6b7280', fontSize: 12 }}
-                      />
-                      <Tooltip
-                        contentStyle={{ borderRadius: '12px', border: 'none', backgroundColor: '#1f2937', color: '#fff', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
-                        itemStyle={{ color: '#fff' }}
-                      />
-                      <Legend iconType="circle" />
-                      <Area
-                        type="monotone"
-                        dataKey="compliance"
-                        name={language === 'en' ? 'Compliance Score' : 'अनुपालन स्कोर'}
-                        stroke="#10b981"
-                        fillOpacity={1}
-                        fill="url(#colorCompliance)"
-                        strokeWidth={3}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="grievances"
-                        name={language === 'en' ? 'Active Grievances' : 'सक्रिय शिकायतें'}
-                        stroke="#f59e0b"
-                        fillOpacity={1}
-                        fill="url(#colorGrievances)"
-                        strokeWidth={3}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                  {loadingGraph ? (
+                    <div className="flex items-center justify-center h-full">
+                      <p className="text-gray-500 animate-pulse">Loading Trends...</p>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={performanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="colorCompliance" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                          </linearGradient>
+                          <linearGradient id="colorGrievances" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} opacity={0.1} />
+                        <XAxis
+                          dataKey="name"
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: '#6b7280', fontSize: 12 }}
+                          dy={10}
+                        />
+                        <YAxis
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: '#6b7280', fontSize: 12 }}
+                        />
+                        <Tooltip
+                          contentStyle={{ borderRadius: '12px', border: 'none', backgroundColor: '#1f2937', color: '#fff', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                          itemStyle={{ color: '#fff' }}
+                        />
+                        <Legend iconType="circle" />
+                        <Area
+                          type="monotone"
+                          dataKey="compliance"
+                          name={language === 'en' ? 'Compliance Score' : 'अनुपालन स्कोर'}
+                          stroke="#10b981"
+                          fillOpacity={1}
+                          fill="url(#colorCompliance)"
+                          strokeWidth={3}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="grievances"
+                          name={language === 'en' ? 'Active Grievances' : 'सक्रिय शिकायतें'}
+                          stroke="#f59e0b"
+                          fillOpacity={1}
+                          fill="url(#colorGrievances)"
+                          strokeWidth={3}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  )}
                 </div>
               </div>
 
@@ -209,9 +276,9 @@ const DeputyCommissionerDashboard = () => {
       case 'Recruitment':
         return <DCRecruitment language={language} userZone={dcZone} />;
       case 'WardProgress':
-        return <WardProgressMap language={language} userZone={dcZone} />;
+        return <DCWardInspection language={language} userZone={dcZone} />;
       case 'Disciplinary':
-        return <DisciplinaryAction language={language} userZone={dcZone} />;
+        return <DCDisciplinary language={language} userZone={dcZone} />;
       case 'Transfers':
         return <InterZoneTransfers language={language} userZone={dcZone} />;
       case 'Grievances':

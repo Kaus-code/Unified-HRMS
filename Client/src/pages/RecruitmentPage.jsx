@@ -333,28 +333,93 @@ const RecruitmentPage = () => {
                         {/* Step 3: Success Status */}
                         {step === 3 && candidate && (
                             <div className="text-center py-10 animate-in fade-in zoom-in duration-300">
-                                <div className="w-24 h-24 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-                                    <Shield size={48} className="text-green-600 dark:text-green-400" />
-                                </div>
-                                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Application Submitted</h2>
-                                <p className="text-lg text-gray-600 dark:text-gray-300 max-w-lg mx-auto mb-8">
-                                    Your application and documents have been securely transmitted to the Deputy Commissioner for final approval.
-                                </p>
+                                {candidate.verificationStatus === 'Approved' ? (
+                                    <>
+                                        <div className="w-24 h-24 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                                            <Shield size={48} className="text-green-600 dark:text-green-400" />
+                                        </div>
+                                        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Congratulations!</h2>
+                                        <p className="text-lg text-green-600 dark:text-green-400 font-medium mb-8">You have been officially hired.</p>
+                                    </>
+                                ) : candidate.verificationStatus === 'Rejected' ? (
+                                    <>
+                                        <div className="w-24 h-24 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                                            <AlertCircle size={48} className="text-red-600 dark:text-red-400" />
+                                        </div>
+                                        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Application Returned</h2>
+                                        <p className="text-lg text-red-600 dark:text-red-400 font-medium mb-8">Action Required</p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="w-24 h-24 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                                            <Shield size={48} className="text-yellow-600 dark:text-yellow-400" />
+                                        </div>
+                                        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Application Submitted</h2>
+                                        <p className="text-lg text-gray-600 dark:text-gray-300 max-w-lg mx-auto mb-8">
+                                            Your application is currently under review by the Deputy Commissioner.
+                                        </p>
+                                    </>
+                                )}
 
                                 <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-100 dark:border-gray-800 inline-block text-left w-full max-w-md">
                                     <div className="flex justify-between items-center mb-4 border-b border-gray-200 dark:border-gray-700 pb-4">
                                         <span className="text-sm text-gray-500">Candidate Name</span>
                                         <span className="font-bold text-gray-900 dark:text-white">{candidate.fullName}</span>
                                     </div>
+
                                     <div className="flex justify-between items-center mb-4 border-b border-gray-200 dark:border-gray-700 pb-4">
-                                        <span className="text-sm text-gray-500">Status</span>
-                                        <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-bold uppercase">Under Review</span>
+                                        <span className="text-sm text-gray-500">Current Status</span>
+                                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase 
+                                            ${candidate.verificationStatus === 'Approved' ? 'bg-green-100 text-green-700' :
+                                                candidate.verificationStatus === 'Rejected' ? 'bg-red-100 text-red-700' :
+                                                    'bg-yellow-100 text-yellow-700'}`}>
+                                            {candidate.verificationStatus === 'Submitted' ? 'Under Review' : candidate.verificationStatus}
+                                        </span>
                                     </div>
+
+                                    {candidate.verificationStatus === 'Approved' && (
+                                        <div className="space-y-3 bg-green-50 dark:bg-green-900/10 p-4 rounded-xl border border-green-100 dark:border-green-800 mb-4">
+                                            <div className="flex justify-between">
+                                                <span className="text-sm text-gray-600 dark:text-gray-400">Employee ID</span>
+                                                <span className="font-mono font-bold text-green-700 dark:text-green-300">{candidate.generatedEmployeeId || 'Generating...'}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-sm text-gray-600 dark:text-gray-400">Allocated Zone</span>
+                                                <span className="font-medium text-gray-900 dark:text-white">{candidate.allocatedZone}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-sm text-gray-600 dark:text-gray-400">Ward Number</span>
+                                                <span className="font-medium text-gray-900 dark:text-white">{candidate.allocatedWard}</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {candidate.verificationStatus === 'Rejected' && (
+                                        <div className="bg-red-50 dark:bg-red-900/10 p-4 rounded-xl border border-red-100 dark:border-red-800 mb-4">
+                                            <span className="text-xs font-bold text-red-500 uppercase tracking-wider block mb-1">Reason for Return</span>
+                                            <p className="text-sm text-gray-800 dark:text-gray-200 font-medium">
+                                                {candidate.rejectionReason || "Please review your documents and try again."}
+                                            </p>
+                                        </div>
+                                    )}
+
                                     <div className="flex justify-between items-center">
                                         <span className="text-sm text-gray-500">Reference ID</span>
                                         <span className="font-mono text-gray-900 dark:text-white">{candidate._id?.substring(0, 8).toUpperCase()}</span>
                                     </div>
                                 </div>
+
+                                {candidate.verificationStatus === 'Rejected' && (
+                                    <div className="mt-8">
+                                        <button
+                                            onClick={() => setStep(2)}
+                                            className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold shadow-lg shadow-red-500/20 transition-all flex items-center justify-center gap-2 mx-auto"
+                                        >
+                                            <UploadCloud size={20} />
+                                            Re-upload Documents
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
 

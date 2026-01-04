@@ -1,4 +1,5 @@
 const Ward = require('../models/Ward');
+const WardPoint = require('../models/WardPoint');
 
 /**
  * Calculate distance between two coordinates using Haversine formula
@@ -78,9 +79,9 @@ async function verifyLocationInWard(currentLat, currentLon, assignedWard, assign
     console.log(`[VERIFY] Checking Point [${currentLon}, ${currentLat}] against Ward ${assignedWard}`);
 
     try {
-        // 1. Precise Geofencing Check (Polygon)
+        // 1. Precise Geofencing Check (Polygon) using WardPoint collection
         // Check if the coordinate is strictly inside the assigned ward's polygon
-        const insideWard = await Ward.findOne({
+        const insideWard = await WardPoint.findOne({
             wardNumber: String(assignedWard),
             boundary: {
                 $geoIntersects: {
@@ -93,17 +94,21 @@ async function verifyLocationInWard(currentLat, currentLon, assignedWard, assign
         });
 
         if (insideWard) {
+            // Fetch ward details for info if needed, but not strictly required for validation success
+            const wardDoc = await Ward.findOne({ wardNumber: String(assignedWard) });
+            const centerCoords = wardDoc ? { latitude: wardDoc.latitude, longitude: wardDoc.longitude } : { latitude: currentLat, longitude: currentLon };
+
             return {
                 isValid: true,
                 distance: 0, // Inside the polygon
                 message: `Location verified. You are strictly inside ${insideWard.wardName} (Ward ${assignedWard}).`,
-                wardCoordinates: { latitude: insideWard.latitude, longitude: insideWard.longitude }
+                wardCoordinates: centerCoords
             };
         }
 
         // 2. Strict Check Failed
         // If we are here, the point is NOT inside the polygon.
-        // We fetch the ward details just to return the center point for UI/Reference, 
+        // We fetch the ward details to return the center point for UI/Reference, 
         // but the status is strictly INVALID.
         const wardDoc = await Ward.findOne({ wardNumber: String(assignedWard) });
         let targetLat, targetLon;
@@ -144,5 +149,3 @@ module.exports = {
     getWardCoordinates,
     verifyLocationInWard
 };
-
-

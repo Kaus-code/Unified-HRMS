@@ -60,9 +60,41 @@ router.get('/stats/:wardId', async (req, res) => {
                 completionRate
             }
         });
-
     } catch (error) {
         console.error('Error fetching inspector stats:', error);
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+});
+
+// POST /inspector/inventory/request
+// Create a new inventory request
+router.post('/inventory/request', async (req, res) => {
+    try {
+        const { employeeId, itemName, quantity, urgency, description, ward, zone } = req.body;
+        const InventoryRequest = require('../models/InventoryRequest');
+
+        // Simple validation
+        if (!itemName || !quantity || !ward) {
+            return res.status(400).json({ success: false, message: 'Missing required fields' });
+        }
+
+        const newRequest = new InventoryRequest({
+            employeeId,
+            itemName,
+            quantity,
+            urgency: urgency || 'Medium',
+            description,
+            ward,
+            zone: zone || 'Unknown', // Ideally passed from frontend
+            status: 'Pending'
+        });
+
+        await newRequest.save();
+
+        res.json({ success: true, message: 'Request submitted successfully', request: newRequest });
+
+    } catch (error) {
+        console.error('Error creating inventory request:', error);
         res.status(500).json({ success: false, message: 'Server Error' });
     }
 });

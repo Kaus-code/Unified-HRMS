@@ -31,6 +31,12 @@ const candidateSchema = new mongoose.Schema({
         isVerified: { type: Boolean, default: false }
     },
 
+    // Allocation Details (Populated after approval)
+    allocatedWard: { type: Number },
+    allocatedZone: { type: String },
+    generatedEmployeeId: { type: String },
+
+
     // Authority Review
     reviewCaseId: { type: mongoose.Schema.Types.ObjectId, ref: 'ReviewCase' },
 
